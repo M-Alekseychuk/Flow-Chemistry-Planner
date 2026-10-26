@@ -1,0 +1,127 @@
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  html.dark {
+    color-scheme: dark;
+  }
+  
+  /* Scrollbar styling for dark mode & light mode */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+  
+  .dark ::-webkit-scrollbar-thumb {
+    background: #334155;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+  
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+  }
+}
+
+/* React Flow Glassmorphism Controls Overrides */
+.react-flow__controls {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  padding: 4px !important;
+  border-radius: 0.875rem !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(226, 232, 240, 0.85) !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.03) !important;
+  overflow: hidden !important;
+}
+
+.dark .react-flow__controls {
+  background: rgba(15, 23, 42, 0.82) !important;
+  border-color: rgba(51, 65, 85, 0.75) !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.35), 0 4px 6px -4px rgba(0, 0, 0, 0.2) !important;
+}
+
+.react-flow__controls-button {
+  width: 32px !important;
+  height: 32px !important;
+  border: none !important;
+  border-radius: 0.5rem !important;
+  background: transparent !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #475569 !important;
+  transition: all 0.15s ease !important;
+}
+
+.react-flow__controls-button:hover {
+  background-color: rgba(241, 245, 249, 0.9) !important;
+  color: #0f172a !important;
+}
+
+.dark .react-flow__controls-button {
+  color: #94a3b8 !important;
+  background-color: transparent !important;
+  border-bottom-color: transparent !important;
+}
+
+.dark .react-flow__controls-button:hover {
+  background-color: rgba(51, 65, 85, 0.8) !important;
+  color: #f8fafc !important;
+}
+
+.react-flow__controls-button svg {
+  width: 14px !important;
+  height: 14px !important;
+  fill: currentColor !important;
+}
+
+.dark .react-flow__minimap {
+  background-color: #0f172a !important;
+  border-color: #334155 !important;
+}
+
+.dark .react-flow__edge-path {
+  stroke: #64748b;
+}
+
+.dark .react-flow__attribution {
+  background-color: rgba(15, 23, 42, 0.7) !important;
+  color: #94a3b8 !important;
+}
+
+/* Fluid flow connection animation for real fluid flow sensation */
+@keyframes fluidDash {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.react-flow__edge.animated path.react-flow__edge-path {
+  stroke-dasharray: 6, 4 !important;
+  animation: fluidDash 1.2s linear infinite !important;
+}
+
+.react-flow__edge-path {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 0.2s ease, stroke-width 0.2s ease;
+}

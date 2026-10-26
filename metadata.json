@@ -1,0 +1,8 @@
+{
+  "name": "Flow Chemistry Designer",
+  "description": "Flow chemistry calculator, reactor circuit designer, automated journal experimental generator, and equipment BOM export tool.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

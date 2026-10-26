@@ -1,0 +1,6 @@
+{
+  "summary":  "Implementation plan to replace the Equipment Glossary with a dedicated Chemistry Tools tab on the Dashboard containing a Solvent Mixing & Contraction Calculator, Pressure Boiling Point & BPR Sizing Calculator, Solvent Miscibility Matrix, and Capillary Pressure Drop & Reynolds Calculator.",
+  "updatedAt":  "2026-10-10T20:51:57.751158440Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

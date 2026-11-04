@@ -2,8 +2,6 @@
 
 A browser-based visual diagramming, hydraulic modeling, and process engineering calculation suite designed specifically for continuous flow chemistry and process development.
 
-![Flow Chemistry Designer](public/logo1.png)
-
 ---
 
 ## Key Features

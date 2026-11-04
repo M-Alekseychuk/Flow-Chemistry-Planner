@@ -48,7 +48,7 @@ const MainLayout = () => {
           <span className="hidden sm:inline">Flow Chemistry Designer</span>
           <span className="sm:hidden">Flow Chem</span>
           <span className="text-xs font-medium px-2 py-0.5 rounded-full border border-blue-300/80 bg-blue-50/90 text-blue-600 dark:bg-blue-950/60 dark:border-blue-700/60 dark:text-blue-300">
-            v1.2.0
+            v1.0.0
           </span>
           {currentProjectId && currentProject && (
             <span className={`text-sm font-normal px-2 py-0.5 rounded ml-1 truncate max-w-[140px] md:max-w-[240px] ${

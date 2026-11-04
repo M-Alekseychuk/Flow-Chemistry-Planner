@@ -10,6 +10,7 @@ import {
   Connection,
   Edge,
   Node,
+  NodeChange,
   Panel,
   SelectionMode,
   getNodesBounds,
@@ -21,7 +22,7 @@ import { CustomNodes, edgeTypes } from './CustomNodes';
 import { useAppContext } from '../AppContext';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
-import { Undo, Redo, Download, Hand, MousePointer } from 'lucide-react';
+import { Undo, Redo, Download, Hand, MousePointer, MoveHorizontal, MoveVertical } from 'lucide-react';
 import { runSimulation } from '../lib/simulation';
 import { CATEGORIES } from './NodePalette';
 import { exportBrandedPdf } from '../lib/reportGenerator';
@@ -238,6 +239,205 @@ const Flow = () => {
     };
   }, [undo, redo]);
 
+  // Measure node height / width for accurate center-based alignment (handles are at top: 50%)
+  const getNodeHeight = useCallback((node: Node): number => {
+    const domNode = document.querySelector(`.react-flow__node[data-id="${node.id}"]`) as HTMLElement;
+    if (domNode && domNode.offsetHeight > 0) {
+      return domNode.offsetHeight;
+    }
+    if ((node as any).measured?.height) {
+      return (node as any).measured.height;
+    }
+    if (node.height) {
+      return node.height;
+    }
+    if (node.type === 'reagent') return 110;
+    if (node.type === 'stoiReagent') return 150;
+    if (node.type === 'freeText') return 50;
+    return 140;
+  }, []);
+
+  const getNodeWidth = useCallback((node: Node): number => {
+    const domNode = document.querySelector(`.react-flow__node[data-id="${node.id}"]`) as HTMLElement;
+    if (domNode && domNode.offsetWidth > 0) {
+      return domNode.offsetWidth;
+    }
+    if ((node as any).measured?.width) {
+      return (node as any).measured.width;
+    }
+    if (node.width) {
+      return node.width;
+    }
+    return 100;
+  }, []);
+
+  // Selected nodes count and alignment utilities
+  const selectedCount = useMemo(() => nodes.filter(n => n.selected).length, [nodes]);
+
+  const alignSelectedHorizontally = useCallback(() => {
+    const selected = nodes.filter(n => n.selected);
+    if (selected.length < 2) return;
+
+    // Center handles are at top: 50% of each node card.
+    // Calculate the target center Y coordinate based on the primary selected node.
+    const primaryNode = selected[0];
+    const primaryHeight = getNodeHeight(primaryNode);
+    let targetCenterY = primaryNode.position.y + primaryHeight / 2;
+
+    if (isGridSnap) {
+      targetCenterY = Math.round(targetCenterY / 16) * 16;
+    }
+
+    historyRef.current.past.push({
+      nodes: JSON.parse(JSON.stringify(nodes)),
+      edges: JSON.parse(JSON.stringify(edges)),
+    });
+    historyRef.current.future = [];
+    setHistoryLength({ past: historyRef.current.past.length, future: 0 });
+
+    setNodes(nds => nds.map(n => {
+      if (n.selected) {
+        const h = getNodeHeight(n);
+        return {
+          ...n,
+          position: {
+            ...n.position,
+            // Align node so that its 50% handle lands exactly on targetCenterY
+            y: Math.round(targetCenterY - h / 2),
+          }
+        };
+      }
+      return n;
+    }));
+  }, [nodes, edges, isGridSnap, getNodeHeight, setNodes]);
+
+  const alignSelectedVertically = useCallback(() => {
+    const selected = nodes.filter(n => n.selected);
+    if (selected.length < 2) return;
+
+    const primaryNode = selected[0];
+    const primaryWidth = getNodeWidth(primaryNode);
+    let targetCenterX = primaryNode.position.x + primaryWidth / 2;
+
+    if (isGridSnap) {
+      targetCenterX = Math.round(targetCenterX / 16) * 16;
+    }
+
+    historyRef.current.past.push({
+      nodes: JSON.parse(JSON.stringify(nodes)),
+      edges: JSON.parse(JSON.stringify(edges)),
+    });
+    historyRef.current.future = [];
+    setHistoryLength({ past: historyRef.current.past.length, future: 0 });
+
+    setNodes(nds => nds.map(n => {
+      if (n.selected) {
+        const w = getNodeWidth(n);
+        return {
+          ...n,
+          position: {
+            ...n.position,
+            x: Math.round(targetCenterX - w / 2),
+          }
+        };
+      }
+      return n;
+    }));
+  }, [nodes, edges, isGridSnap, getNodeWidth, setNodes]);
+
+  // Center-aligned drag snapping: When Grid Snap is ON, snaps each node's center (where handles are)
+  // to the 16px grid lines. This ensures different sized modules dragged to the same row align in a 100% straight line!
+  const handleNodesChange = useCallback((changes: NodeChange[]) => {
+    if (isGridSnap) {
+      const adjustedChanges = changes.map(change => {
+        if (change.type === 'position' && change.position) {
+          const nodeObj = nodes.find(n => n.id === change.id) || ({ id: change.id } as Node);
+          const h = getNodeHeight(nodeObj);
+          
+          // Snap horizontal X to 16px grid
+          const snappedX = Math.round(change.position.x / 16) * 16;
+
+          // Snap vertical center (where handles are) to 16px grid
+          const currentCenterY = change.position.y + h / 2;
+          const snappedCenterY = Math.round(currentCenterY / 16) * 16;
+          const snappedY = Math.round(snappedCenterY - h / 2);
+
+          return {
+            ...change,
+            position: {
+              x: snappedX,
+              y: snappedY,
+            }
+          };
+        }
+        return change;
+      });
+      onNodesChange(adjustedChanges);
+    } else {
+      onNodesChange(changes);
+    }
+  }, [isGridSnap, nodes, getNodeHeight, onNodesChange]);
+
+  // Canvas event listener for programmatic node additions and updates (e.g. from Chemistry Tools)
+  useEffect(() => {
+    const handleAddNode = (e: any) => {
+      const newNode = e.detail;
+      if (!newNode || !newNode.id) return;
+
+      let position = newNode.position || { x: 400, y: 200 };
+      if (reactFlowInstance) {
+        try {
+          const viewport = reactFlowInstance.getViewport();
+          if (viewport && viewport.zoom && reactFlowWrapper.current) {
+            const centerX = (-viewport.x + reactFlowWrapper.current.clientWidth / 2) / viewport.zoom;
+            const centerY = (-viewport.y + reactFlowWrapper.current.clientHeight / 2) / viewport.zoom;
+            if (!isNaN(centerX) && !isNaN(centerY)) {
+              position = {
+                x: Math.round(centerX - 60 + (Math.random() * 40 - 20)),
+                y: Math.round(centerY - 30 + (Math.random() * 40 - 20))
+              };
+            }
+          }
+        } catch (err) {
+          // fallback to newNode.position
+        }
+      }
+
+      const nodeToAdd = { ...newNode, position };
+      setNodes((currentNodes) => {
+        if (currentNodes.some((n: any) => n.id === nodeToAdd.id)) {
+          return currentNodes;
+        }
+        return [...currentNodes, nodeToAdd];
+      });
+    };
+
+    const handleApplyNode = (e: any) => {
+      const { id, dataPatch } = e.detail || {};
+      if (!id || !dataPatch) return;
+
+      setNodes((currentNodes) => currentNodes.map((n: any) => {
+        if (n.id === id) {
+          return {
+            ...n,
+            data: {
+              ...(n.data || {}),
+              ...dataPatch
+            }
+          };
+        }
+        return n;
+      }));
+    };
+
+    window.addEventListener('app_add_canvas_node', handleAddNode);
+    window.addEventListener('app_apply_canvas_node', handleApplyNode);
+    return () => {
+      window.removeEventListener('app_add_canvas_node', handleAddNode);
+      window.removeEventListener('app_apply_canvas_node', handleApplyNode);
+    };
+  }, [reactFlowInstance, setNodes]);
+
   // History tracking observer effect
   useEffect(() => {
     if (isInitializingRef.current) {
@@ -398,7 +598,10 @@ const Flow = () => {
 
       if (isGridSnap) {
         position.x = Math.round(position.x / 16) * 16;
-        position.y = Math.round(position.y / 16) * 16;
+        const estH = type === 'reagent' ? 110 : type === 'stoiReagent' ? 150 : 140;
+        const centerY = position.y + estH / 2;
+        const snappedCenterY = Math.round(centerY / 16) * 16;
+        position.y = Math.round(snappedCenterY - estH / 2);
       }
       
       let data: any = { label: `${type} node` };
@@ -564,7 +767,7 @@ const Flow = () => {
       <ReactFlow
         nodes={nodes}
         edges={simulatedEdges}
-        onNodesChange={onNodesChange}
+        onNodesChange={handleNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onInit={setReactFlowInstance}
@@ -577,7 +780,7 @@ const Flow = () => {
         selectionOnDrag={isSelectMode}
         panOnDrag={!isSelectMode}
         selectionMode={SelectionMode.Partial}
-        snapToGrid={isGridSnap}
+        snapToGrid={false}
         snapGrid={[16, 16]}
         fitView
       >
@@ -650,6 +853,30 @@ const Flow = () => {
 
             {/* Subtle Divider */}
             <div className="w-px h-5 bg-slate-200/90 dark:bg-slate-700/80 mx-0.5" />
+
+            {/* Alignment tools (visible whenever 2+ nodes are selected) */}
+            {selectedCount >= 2 && (
+              <>
+                <div className="flex items-center gap-0.5 bg-sky-50 dark:bg-sky-950/70 p-0.5 rounded-xl border border-sky-200/70 dark:border-sky-800/70 animate-fade-in">
+                  <button
+                    onClick={alignSelectedHorizontally}
+                    className="h-8 px-2.5 rounded-lg text-xs font-semibold text-sky-700 dark:text-sky-300 hover:bg-white dark:hover:bg-slate-800 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
+                    title={`Align ${selectedCount} selected modules in a straight horizontal line`}
+                  >
+                    <MoveHorizontal size={14} />
+                    <span>Align Straight</span>
+                  </button>
+                  <button
+                    onClick={alignSelectedVertically}
+                    className="h-8 px-2 rounded-lg text-xs font-semibold text-sky-700 dark:text-sky-300 hover:bg-white dark:hover:bg-slate-800 shadow-2xs flex items-center justify-center transition-all cursor-pointer"
+                    title={`Align ${selectedCount} selected modules vertically`}
+                  >
+                    <MoveVertical size={14} />
+                  </button>
+                </div>
+                <div className="w-px h-5 bg-slate-200/90 dark:bg-slate-700/80 mx-0.5" />
+              </>
+            )}
 
             {/* PDF Report Button */}
             <button

@@ -27,7 +27,7 @@ export default function ChemistryToolsModal() {
       />
 
       {/* Modal Dialog Container */}
-      <div className={`relative w-full max-w-6xl max-h-[92vh] flex flex-col rounded-2xl border shadow-2xl overflow-hidden z-10 transition-all ${
+      <div className={`relative w-full max-w-7xl max-h-[92vh] flex flex-col rounded-2xl border shadow-2xl overflow-hidden z-10 transition-all ${
         isDarkMode 
           ? 'bg-slate-900 border-slate-800 text-slate-100 shadow-cyan-950/20' 
           : 'bg-slate-50 border-slate-200 text-slate-900 shadow-slate-900/15'

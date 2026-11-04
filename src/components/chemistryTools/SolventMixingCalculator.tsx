@@ -106,38 +106,40 @@ export default function SolventMixingCalculator() {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 pt-1">
-            <div>
+          <div className="flex flex-col sm:flex-row gap-3 pt-1">
+            <div className="flex-1 min-w-[120px]">
               <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                 {inputMode === 'volume' ? 'Volume A (mL)' : 'Mass A (g)'}
               </label>
-              <div className="relative">
+              <div className="relative flex items-center">
                 <input
                   type="number"
                   min="0.1"
                   step="any"
                   value={valA}
                   onChange={(e) => setValA(parseFloat(e.target.value) || 0)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-base font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg pl-3 pr-12 py-2 text-base font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
-                <span className="absolute right-3 top-2.5 text-xs text-slate-400 dark:text-slate-500 font-mono">
-                  {inputMode === 'volume' ? 'mL' : 'g'}
-                </span>
+                <div className="absolute right-2.5 pointer-events-none flex items-center">
+                  <span className="px-1.5 py-0.5 rounded bg-slate-200/80 dark:bg-slate-700/80 text-[11px] font-mono font-bold text-slate-600 dark:text-slate-300">
+                    {inputMode === 'volume' ? 'mL' : 'g'}
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div className="bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 flex flex-col justify-center text-xs space-y-1">
-              <div className="flex justify-between text-slate-500 dark:text-slate-400">
-                <span>Density:</span>
-                <span className="font-mono font-medium text-slate-700 dark:text-slate-300">{result.solventA.density} g/mL</span>
+            <div className="flex-1 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 flex flex-col justify-center text-[11px] space-y-1 min-w-[135px]">
+              <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 gap-1">
+                <span className="shrink-0">Density:</span>
+                <span className="font-mono font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">{result.solventA.density} g/mL</span>
               </div>
-              <div className="flex justify-between text-slate-500 dark:text-slate-400">
-                <span>Molar Mass:</span>
-                <span className="font-mono font-medium text-slate-700 dark:text-slate-300">{result.solventA.molarMass} g/mol</span>
+              <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 gap-1">
+                <span className="shrink-0">Molar Mass:</span>
+                <span className="font-mono font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">{result.solventA.molarMass} g/mol</span>
               </div>
-              <div className="flex justify-between text-slate-500 dark:text-slate-400">
-                <span>Boiling Pt:</span>
-                <span className="font-mono font-medium text-slate-700 dark:text-slate-300">{result.solventA.boilingPoint}°C</span>
+              <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 gap-1">
+                <span className="shrink-0">Boiling Pt:</span>
+                <span className="font-mono font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">{result.solventA.boilingPoint}°C</span>
               </div>
             </div>
           </div>
@@ -179,38 +181,40 @@ export default function SolventMixingCalculator() {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 pt-1">
-            <div>
+          <div className="flex flex-col sm:flex-row gap-3 pt-1">
+            <div className="flex-1 min-w-[120px]">
               <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                 {inputMode === 'volume' ? 'Volume B (mL)' : 'Mass B (g)'}
               </label>
-              <div className="relative">
+              <div className="relative flex items-center">
                 <input
                   type="number"
                   min="0.1"
                   step="any"
                   value={valB}
                   onChange={(e) => setValB(parseFloat(e.target.value) || 0)}
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2 text-base font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg pl-3 pr-12 py-2 text-base font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
-                <span className="absolute right-3 top-2.5 text-xs text-slate-400 dark:text-slate-500 font-mono">
-                  {inputMode === 'volume' ? 'mL' : 'g'}
-                </span>
+                <div className="absolute right-2.5 pointer-events-none flex items-center">
+                  <span className="px-1.5 py-0.5 rounded bg-slate-200/80 dark:bg-slate-700/80 text-[11px] font-mono font-bold text-slate-600 dark:text-slate-300">
+                    {inputMode === 'volume' ? 'mL' : 'g'}
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div className="bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 flex flex-col justify-center text-xs space-y-1">
-              <div className="flex justify-between text-slate-500 dark:text-slate-400">
-                <span>Density:</span>
-                <span className="font-mono font-medium text-slate-700 dark:text-slate-300">{result.solventB.density} g/mL</span>
+            <div className="flex-1 bg-slate-50 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 flex flex-col justify-center text-[11px] space-y-1 min-w-[135px]">
+              <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 gap-1">
+                <span className="shrink-0">Density:</span>
+                <span className="font-mono font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">{result.solventB.density} g/mL</span>
               </div>
-              <div className="flex justify-between text-slate-500 dark:text-slate-400">
-                <span>Molar Mass:</span>
-                <span className="font-mono font-medium text-slate-700 dark:text-slate-300">{result.solventB.molarMass} g/mol</span>
+              <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 gap-1">
+                <span className="shrink-0">Molar Mass:</span>
+                <span className="font-mono font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">{result.solventB.molarMass} g/mol</span>
               </div>
-              <div className="flex justify-between text-slate-500 dark:text-slate-400">
-                <span>Boiling Pt:</span>
-                <span className="font-mono font-medium text-slate-700 dark:text-slate-300">{result.solventB.boilingPoint}°C</span>
+              <div className="flex justify-between items-center text-slate-500 dark:text-slate-400 gap-1">
+                <span className="shrink-0">Boiling Pt:</span>
+                <span className="font-mono font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">{result.solventB.boilingPoint}°C</span>
               </div>
             </div>
           </div>

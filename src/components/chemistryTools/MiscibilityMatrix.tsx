@@ -13,7 +13,11 @@ import {
   Upload,
   Check,
   Zap,
-  Split
+  Split,
+  Crosshair,
+  Grid,
+  CircleDot,
+  ArrowRight
 } from 'lucide-react';
 import { useAppContext } from '../../AppContext';
 
@@ -23,8 +27,10 @@ export default function MiscibilityMatrix() {
   const [solventAId, setSolventAId] = useState('water');
   const [solventBId, setSolventBId] = useState('ethyl_acetate');
   const [matrixFilter, setMatrixFilter] = useState('');
-  const [viewMode, setViewMode] = useState<'inspector' | 'matrix'>('inspector');
+  const [viewMode, setViewMode] = useState<'inspector' | 'matrix'>('matrix');
   const [feedbackMsg, setFeedbackMsg] = useState<{ text: string; type: 'success' | 'info' } | null>(null);
+  const [hoveredCell, setHoveredCell] = useState<{ rowId: string; colId: string } | null>(null);
+  const [matrixStyle, setMatrixStyle] = useState<'badges' | 'dots'>('badges');
 
   const pairwise = useMemo(() => {
     return getMiscibility(solventAId, solventBId);
@@ -51,14 +57,28 @@ export default function MiscibilityMatrix() {
     return list;
   }, [stoiRows]);
 
-  // Solvents for matrix view (top 12 common flow solvents)
+  // Solvents for matrix view (all 32 benchmark laboratory solvents)
   const matrixSolvents = useMemo(() => {
+    const baseSolvents = SOLVENTS.filter(s => s.id !== '2methf'); // 32 solvents matching reference chart
     if (!matrixFilter.trim()) {
-      return SOLVENTS.slice(0, 12);
+      return baseSolvents;
     }
     const q = matrixFilter.toLowerCase();
-    return SOLVENTS.filter(s => s.name.toLowerCase().includes(q) || s.formula.toLowerCase().includes(q));
+    return baseSolvents.filter(s => 
+      s.name.toLowerCase().includes(q) || 
+      s.formula.toLowerCase().includes(q) ||
+      s.id.toLowerCase().includes(q)
+    );
   }, [matrixFilter]);
+
+  // Dynamic hovered pair calculation for live crosshair readout
+  const hoveredPair = useMemo(() => {
+    if (!hoveredCell) return null;
+    const sRow = getSolvent(hoveredCell.rowId);
+    const sCol = getSolvent(hoveredCell.colId);
+    const misc = getMiscibility(hoveredCell.rowId, hoveredCell.colId);
+    return { sRow, sCol, misc };
+  }, [hoveredCell]);
 
   const handleSwap = () => {
     setSolventAId(solventBId);
@@ -503,96 +523,349 @@ export default function MiscibilityMatrix() {
       ) : (
         /* FULL GRID MATRIX */
         <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Search size={16} className="text-slate-400" />
-              <input
-                type="text"
-                placeholder="Filter solvents..."
-                value={matrixFilter}
-                onChange={(e) => setMatrixFilter(e.target.value)}
-                className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 w-48"
-              />
+          {/* Header Controls & Status Readout */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative">
+                <Search size={14} className="absolute left-2.5 top-2.5 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Filter 32 solvents..."
+                  value={matrixFilter}
+                  onChange={(e) => setMatrixFilter(e.target.value)}
+                  className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 w-52"
+                />
+              </div>
+
+              {matrixFilter && (
+                <button
+                  onClick={() => setMatrixFilter('')}
+                  className="text-xs text-teal-600 dark:text-teal-400 hover:underline cursor-pointer"
+                >
+                  Clear ({matrixSolvents.length} showing)
+                </button>
+              )}
+
+              {/* Display Mode Toggle */}
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setMatrixStyle('badges')}
+                  className={`px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                    matrixStyle === 'badges'
+                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+                  }`}
+                  title="Show M, I, P, Self text badges"
+                >
+                  <Grid size={13} />
+                  <span>Symbol Badges (M / I)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMatrixStyle('dots')}
+                  className={`px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${
+                    matrixStyle === 'dots'
+                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+                  }`}
+                  title="Show reference chart dot style"
+                >
+                  <CircleDot size={13} />
+                  <span>Dot Matrix (Chart Style)</span>
+                </button>
+              </div>
             </div>
 
             {/* Legend */}
-            <div className="flex items-center gap-4 text-xs font-medium">
+            <div className="flex flex-wrap items-center gap-3.5 text-xs font-medium">
               <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
-                <span className="text-slate-600 dark:text-slate-300">Miscible</span>
+                <span className="w-3 h-3 rounded-xs bg-emerald-500 border border-emerald-600"></span>
+                <span className="text-slate-700 dark:text-slate-200 font-semibold">Miscible (Homogeneous)</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-amber-500"></span>
-                <span className="text-slate-600 dark:text-slate-300">Partially Miscible</span>
+                <span className="w-3 h-3 rounded-full bg-slate-800 dark:bg-slate-200"></span>
+                <span className="text-slate-700 dark:text-slate-200 font-semibold">Immiscible (Biphasic)</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-rose-500"></span>
-                <span className="text-slate-600 dark:text-slate-300">Immiscible</span>
+                <span className="w-3 h-3 rounded-xs bg-slate-300 dark:bg-slate-600 border border-slate-400"></span>
+                <span className="text-slate-700 dark:text-slate-200 font-semibold">Diagonal (Self)</span>
               </div>
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs border-collapse">
+          {/* Interactive Crosshair Inspection Readout Banner */}
+          <div className="p-3.5 rounded-xl border border-sky-200 dark:border-sky-900/60 bg-gradient-to-r from-sky-50/80 via-indigo-50/50 to-teal-50/70 dark:from-sky-950/40 dark:via-slate-800/80 dark:to-teal-950/30 shadow-2xs transition-all">
+            {hoveredPair ? (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <div className="w-6 h-6 rounded-md bg-sky-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                    <Crosshair size={14} />
+                  </div>
+                  <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-100">
+                    <span className="text-sky-700 dark:text-sky-300 font-extrabold">{hoveredPair.sRow.name}</span>
+                    <span className="text-slate-400 font-normal">×</span>
+                    <span className="text-teal-700 dark:text-teal-300 font-extrabold">{hoveredPair.sCol.name}</span>
+                  </div>
+
+                  <span className="mx-1 text-slate-300 dark:text-slate-600">•</span>
+
+                  {hoveredPair.sRow.id === hoveredPair.sCol.id ? (
+                    <span className="px-2 py-0.5 rounded-md font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">
+                      Diagonal Identity (Pure Solvent)
+                    </span>
+                  ) : hoveredPair.misc.status === 'miscible' ? (
+                    <span className="px-2 py-0.5 rounded-md font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 flex items-center gap-1">
+                      <CheckCircle2 size={12} /> Miscible Blend (Single Phase)
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-md font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 flex items-center gap-1">
+                      <XCircle size={12} /> Immiscible (Biphasic Boundary)
+                    </span>
+                  )}
+
+                  {hoveredPair.sRow.id !== hoveredPair.sCol.id && (
+                    <span className="text-slate-600 dark:text-slate-300 font-mono">
+                      Δρ = {hoveredPair.misc.densityDelta} g/mL
+                      {hoveredPair.misc.upperPhase && (
+                        <span className="ml-1 text-slate-500 dark:text-slate-400">
+                          (Top: {hoveredPair.misc.upperPhase.name.split(' ')[0]} | Bottom: {hoveredPair.misc.lowerPhase?.name.split(' ')[0]})
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => {
+                      setSolventAId(hoveredPair.sRow.id);
+                      setSolventBId(hoveredPair.sCol.id);
+                      setViewMode('inspector');
+                    }}
+                    className="px-2.5 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-semibold transition-all cursor-pointer flex items-center gap-1"
+                  >
+                    <span>Inspect Pairwise</span>
+                    <ArrowRight size={12} />
+                  </button>
+
+                  {hoveredPair.misc.status !== 'miscible' && (
+                    <button
+                      onClick={() => {
+                        const newNode = {
+                          id: `zaiput_${Date.now()}`,
+                          type: 'zaiput',
+                          position: { 
+                            x: 450 + Math.floor(Math.random() * 60), 
+                            y: 200 + Math.floor(Math.random() * 60) 
+                          },
+                          data: {
+                            label: 'Membrane Separator (Zaiput)',
+                            notes: `Top: ${hoveredPair.misc.upperPhase?.name} | Bottom: ${hoveredPair.misc.lowerPhase?.name} (Δρ = ${hoveredPair.misc.densityDelta} g/mL)`
+                          }
+                        };
+                        addNodeToCanvas(newNode);
+                        showFeedback(`Added Zaiput Separator for ${hoveredPair.sRow.name} + ${hoveredPair.sCol.name} to canvas!`);
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-teal-600 hover:bg-teal-500 text-white font-semibold transition-all cursor-pointer flex items-center gap-1"
+                    >
+                      <PlusCircle size={12} />
+                      <span>Add Zaiput</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                <Crosshair size={14} className="text-sky-500 shrink-0 animate-pulse" />
+                <span>
+                  <strong>Interactive Crosshair Highlighting Active:</strong> Hover your cursor over any row or column in the matrix below to instantly track intersecting lines, test biphasic extraction, and inspect solvent properties.
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Matrix Table with Sticky Column & Row Headers and Crosshair Line Highlighting */}
+          <div 
+            className="overflow-x-auto overflow-y-auto max-h-[660px] rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xs relative"
+            onMouseLeave={() => setHoveredCell(null)}
+          >
+            <table className="text-xs border-collapse w-max min-w-full">
               <thead>
                 <tr>
-                  <th className="p-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 text-left font-bold text-slate-700 dark:text-slate-200 sticky left-0 z-10">
-                    Solvent
+                  {/* Top-Left Corner Header */}
+                  <th className="p-3 border-b-2 border-r-2 border-slate-300 dark:border-slate-700 bg-slate-200 dark:bg-slate-800 text-left font-bold text-slate-800 dark:text-slate-100 sticky top-0 left-0 z-30 min-w-[220px] w-[220px] shadow-xs">
+                    <div className="flex flex-col">
+                      <span className="text-xs uppercase tracking-wider font-extrabold text-slate-700 dark:text-slate-200">
+                        Solvent Names
+                      </span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">
+                        Row (Solvent 1) ↓ vs Column (Solvent 2) →
+                      </span>
+                    </div>
                   </th>
-                  {matrixSolvents.map((s) => (
-                    <th
-                      key={s.id}
-                      className="p-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 text-center font-bold text-slate-700 dark:text-slate-200 min-w-[70px]"
-                    >
-                      <div className="truncate max-w-[70px]" title={s.name}>
-                        {s.formula || s.name.split(' ')[0]}
-                      </div>
-                    </th>
-                  ))}
+
+                  {/* Vertical Column Headers with Spelled-out Full Names */}
+                  {matrixSolvents.map((colSolvent) => {
+                    const isColHighlighted = hoveredCell?.colId === colSolvent.id;
+                    return (
+                      <th
+                        key={colSolvent.id}
+                        onMouseEnter={() => setHoveredCell(prev => ({ rowId: prev?.rowId || colSolvent.id, colId: colSolvent.id }))}
+                        className={`p-1.5 border-b-2 border-r border-slate-200 dark:border-slate-800 sticky top-0 z-20 h-52 w-10 min-w-[38px] max-w-[38px] align-bottom text-left transition-colors cursor-pointer select-none ${
+                          isColHighlighted
+                            ? 'bg-sky-100 dark:bg-sky-900/90 border-b-4 border-b-sky-500 text-sky-950 dark:text-sky-100 font-black shadow-sm ring-1 ring-sky-300'
+                            : 'bg-slate-100 dark:bg-slate-800/95 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-750'
+                        }`}
+                        title={`${colSolvent.name} (${colSolvent.formula}) - ρ = ${colSolvent.density} g/mL`}
+                      >
+                        <div
+                          className="font-bold text-xs tracking-tight whitespace-nowrap pb-2 px-1"
+                          style={{
+                            writingMode: 'vertical-rl',
+                            transform: 'rotate(180deg)',
+                            display: 'inline-block'
+                          }}
+                        >
+                          {colSolvent.name}
+                        </div>
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
-                {matrixSolvents.map((rowSolvent) => (
-                  <tr key={rowSolvent.id}>
-                    <td className="p-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 font-bold text-slate-800 dark:text-slate-200 sticky left-0 z-10 whitespace-nowrap">
-                      {rowSolvent.formula || rowSolvent.name.split(' ')[0]}
-                    </td>
-                    {matrixSolvents.map((colSolvent) => {
-                      const pair = getMiscibility(rowSolvent.id, colSolvent.id);
-                      let cellBg = 'bg-slate-100 dark:bg-slate-800 text-slate-400';
-                      let cellText = '—';
+                {matrixSolvents.map((rowSolvent) => {
+                  const isRowHighlighted = hoveredCell?.rowId === rowSolvent.id;
 
-                      if (rowSolvent.id === colSolvent.id) {
-                        cellBg = 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold';
-                        cellText = 'Self';
-                      } else if (pair.status === 'miscible') {
-                        cellBg = 'bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/80 text-emerald-800 dark:text-emerald-300 font-bold';
-                        cellText = 'M';
-                      } else if (pair.status === 'immiscible') {
-                        cellBg = 'bg-rose-100 hover:bg-rose-200 dark:bg-rose-950/60 dark:hover:bg-rose-900/80 text-rose-800 dark:text-rose-300 font-bold';
-                        cellText = 'I';
-                      } else if (pair.status === 'partially') {
-                        cellBg = 'bg-amber-100 hover:bg-amber-200 dark:bg-amber-950/60 dark:hover:bg-amber-900/80 text-amber-800 dark:text-amber-300 font-bold';
-                        cellText = 'P';
-                      }
+                  return (
+                    <tr key={rowSolvent.id} className="transition-colors">
+                      {/* Sticky Row Header with Spelled-out Full Name */}
+                      <td
+                        onMouseEnter={() => setHoveredCell(prev => ({ rowId: rowSolvent.id, colId: prev?.colId || rowSolvent.id }))}
+                        className={`p-2.5 border-b border-r-2 border-slate-200 dark:border-slate-800 sticky left-0 z-10 min-w-[220px] w-[220px] transition-colors cursor-pointer select-none ${
+                          isRowHighlighted
+                            ? 'bg-sky-100 dark:bg-sky-900/90 border-r-4 border-r-sky-500 text-sky-950 dark:text-sky-100 font-black shadow-sm ring-1 ring-sky-300'
+                            : 'bg-slate-50 dark:bg-slate-800/95 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-750'
+                        }`}
+                        title={`${rowSolvent.name} (${rowSolvent.formula}) - ρ = ${rowSolvent.density} g/mL`}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-bold text-xs truncate" title={rowSolvent.name}>
+                            {rowSolvent.name}
+                          </span>
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono flex items-center gap-1 mt-0.5">
+                            <span>{rowSolvent.formula}</span>
+                            <span>•</span>
+                            <span>ρ = {rowSolvent.density}</span>
+                          </span>
+                        </div>
+                      </td>
 
-                      return (
-                        <td
-                          key={colSolvent.id}
-                          onClick={() => {
-                            setSolventAId(rowSolvent.id);
-                            setSolventBId(colSolvent.id);
-                            setViewMode('inspector');
-                          }}
-                          className={`p-2 border border-slate-200 dark:border-slate-800 text-center font-mono cursor-pointer transition-colors ${cellBg}`}
-                          title={`${rowSolvent.name} + ${colSolvent.name}: ${pair.status}`}
-                        >
-                          {cellText}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
+                      {/* Matrix Grid Cells with Crosshair Highlighting */}
+                      {matrixSolvents.map((colSolvent) => {
+                        const isCol = hoveredCell?.colId === colSolvent.id;
+                        const isRow = hoveredCell?.rowId === rowSolvent.id;
+                        const isIntersection = isRow && isCol;
+                        const isCrosshair = isRow || isCol;
+                        const isSelf = rowSolvent.id === colSolvent.id;
+
+                        const pair = getMiscibility(rowSolvent.id, colSolvent.id);
+
+                        let cellClasses = '';
+                        let cellContent: React.ReactNode = null;
+
+                        if (isSelf) {
+                          // Diagonal Identity Cell - preserved per user request
+                          if (isIntersection) {
+                            cellClasses = 'bg-slate-300 dark:bg-slate-600 text-slate-900 dark:text-white font-black ring-2 ring-sky-500 scale-105 z-10 shadow-sm';
+                          } else if (isCrosshair) {
+                            cellClasses = 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold border-sky-300 dark:border-sky-600';
+                          } else {
+                            cellClasses = 'bg-slate-100 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 font-semibold';
+                          }
+
+                          cellContent = matrixStyle === 'badges' ? (
+                            <span className="text-[10px] font-bold">Self</span>
+                          ) : (
+                            <span className="text-slate-400 font-bold">—</span>
+                          );
+                        } else if (pair.status === 'miscible') {
+                          // Miscible Cell
+                          if (isIntersection) {
+                            cellClasses = 'bg-emerald-300 dark:bg-emerald-700 text-emerald-950 dark:text-emerald-50 font-black ring-2 ring-emerald-500 scale-110 z-10 shadow-md';
+                          } else if (isCrosshair) {
+                            cellClasses = 'bg-emerald-100/90 dark:bg-emerald-950/80 text-emerald-900 dark:text-emerald-200 font-bold border-y-sky-300 dark:border-y-sky-600';
+                          } else {
+                            cellClasses = 'bg-emerald-50/80 hover:bg-emerald-100/90 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 font-bold';
+                          }
+
+                          cellContent = matrixStyle === 'badges' ? (
+                            <span>M</span>
+                          ) : (
+                            <span className="w-full h-full block"></span>
+                          );
+                        } else if (pair.status === 'immiscible') {
+                          // Immiscible Cell (Biphasic)
+                          if (isIntersection) {
+                            cellClasses = 'bg-rose-300 dark:bg-rose-700 text-rose-950 dark:text-rose-50 font-black ring-2 ring-rose-500 scale-110 z-10 shadow-md';
+                          } else if (isCrosshair) {
+                            cellClasses = 'bg-rose-100/90 dark:bg-rose-950/80 text-rose-900 dark:text-rose-200 font-bold border-y-sky-300 dark:border-y-sky-600';
+                          } else {
+                            cellClasses = 'bg-rose-50/80 hover:bg-rose-100/90 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-800 dark:text-rose-300 font-bold';
+                          }
+
+                          cellContent = matrixStyle === 'badges' ? (
+                            <span>I</span>
+                          ) : (
+                            <span className="inline-block w-3 h-3 rounded-full bg-slate-800 dark:bg-slate-200 shadow-2xs"></span>
+                          );
+                        } else {
+                          // Partially Miscible Cell
+                          if (isIntersection) {
+                            cellClasses = 'bg-amber-300 dark:bg-amber-700 text-amber-950 dark:text-amber-50 font-black ring-2 ring-amber-500 scale-110 z-10 shadow-md';
+                          } else if (isCrosshair) {
+                            cellClasses = 'bg-amber-100/90 dark:bg-amber-950/80 text-amber-900 dark:text-amber-200 font-bold border-y-sky-300 dark:border-y-sky-600';
+                          } else {
+                            cellClasses = 'bg-amber-50/80 hover:bg-amber-100/90 dark:bg-amber-950/40 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 font-bold';
+                          }
+
+                          cellContent = matrixStyle === 'badges' ? (
+                            <span>P</span>
+                          ) : (
+                            <span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 shadow-2xs"></span>
+                          );
+                        }
+
+                        // Add crosshair border highlights
+                        let borderClasses = 'border border-slate-200 dark:border-slate-800';
+                        if (isRow && !isIntersection) {
+                          borderClasses = 'border-y border-y-sky-400 dark:border-y-sky-500 border-x border-x-slate-200 dark:border-x-slate-800';
+                        } else if (isCol && !isIntersection) {
+                          borderClasses = 'border-x border-x-sky-400 dark:border-x-sky-500 border-y border-y-slate-200 dark:border-y-slate-800';
+                        }
+
+                        return (
+                          <td
+                            key={colSolvent.id}
+                            onMouseEnter={() => setHoveredCell({ rowId: rowSolvent.id, colId: colSolvent.id })}
+                            onClick={() => {
+                              setSolventAId(rowSolvent.id);
+                              setSolventBId(colSolvent.id);
+                              setViewMode('inspector');
+                            }}
+                            className={`w-10 min-w-[38px] max-w-[38px] h-10 min-h-[40px] text-center font-mono cursor-pointer transition-all duration-75 select-none relative ${borderClasses} ${cellClasses}`}
+                            title={`${rowSolvent.name} + ${colSolvent.name}: ${pair.status.toUpperCase()} (Click to inspect)`}
+                          >
+                            <div className="flex items-center justify-center w-full h-full">
+                              {cellContent}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

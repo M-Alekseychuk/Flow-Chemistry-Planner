@@ -28,6 +28,7 @@ export const AppProvider = ({ children }: any) => {
   const [systemDefaultLogo, setSystemDefaultLogoState] = useState<string | null>(() => getStoredSystemDefaultLogo());
   const [logoHeight, setLogoHeightState] = useState<number>(() => getStoredLogoHeight());
   const [isBrandingModalOpen, setIsBrandingModalOpen] = useState(false);
+  const [isChemistryToolsModalOpen, setIsChemistryToolsModalOpen] = useState(false);
 
   // Sync custom logo, system default logo, and logo height across windows / tabs / events
   useEffect(() => {
@@ -293,44 +294,76 @@ export const AppProvider = ({ children }: any) => {
     localStorage.setItem('flow-deleted-projects', JSON.stringify(deletedProjects));
   }, [deletedProjects]);
 
+  const createProject = useCallback((meta?: { name?: string; comments?: string; flowData?: any }) => {
+    const newId = uuidv4();
+    const now = Date.now();
+    const newProject: Project = {
+      id: newId,
+      name: meta?.name?.trim() || 'New Project',
+      createdAt: now,
+      updatedAt: now,
+      comments: meta?.comments || '',
+      flowData: meta?.flowData || {
+        nodes: [],
+        edges: [],
+        viewport: { x: 0, y: 0, zoom: 1 },
+        stoiRows: [
+          { id: 1, name: 'Reagent 1', conc: 1.0, flow: 1.0, isLimiting: true }
+        ],
+      }
+    };
+
+    setProjects(prev => {
+      if (prev.some(p => p.id === newId)) return prev;
+      return [newProject, ...prev];
+    });
+
+    return newProject;
+  }, []);
+
   const saveProject = useCallback((projectData: Partial<Project>) => {
-    setCurrentProjectId(currId => {
-      const effectiveId = currId || projectData.id;
-      if (effectiveId) {
-        setProjects(prev => {
-          const exists = prev.some(p => p.id === effectiveId);
-          if (exists) {
-            return prev.map(p => 
-              p.id === effectiveId ? { ...p, ...projectData, updatedAt: Date.now() } : p
-            );
-          } else {
-            const newProject: Project = {
-              id: effectiveId,
-              name: projectData.name || 'Untitled Project',
-              createdAt: projectData.createdAt || Date.now(),
-              updatedAt: Date.now(),
-              comments: projectData.comments || '',
-              flowData: projectData.flowData || { nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 }, stoiRows: [] }
-            };
-            return [...prev.filter(p => p.id !== effectiveId), newProject];
-          }
-        });
-        return effectiveId;
-      } else {
+    setProjects(prev => {
+      const targetId = projectData.id || currentProjectId;
+      if (!targetId) {
         const newId = uuidv4();
+        const now = Date.now();
         const newProject: Project = {
           id: newId,
           name: projectData.name || 'Untitled Project',
-          createdAt: projectData.createdAt || Date.now(),
-          updatedAt: Date.now(),
+          createdAt: projectData.createdAt || now,
+          updatedAt: now,
           comments: projectData.comments || '',
           flowData: projectData.flowData || { nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 }, stoiRows: [] }
         };
-        setProjects(prev => [...prev.filter(p => p.id !== newId), newProject]);
-        return newId;
+        return [newProject, ...prev];
+      }
+
+      const exists = prev.some(p => p.id === targetId);
+      if (exists) {
+        return prev.map(p => 
+          p.id === targetId
+            ? {
+                ...p,
+                ...projectData,
+                updatedAt: Date.now(),
+                flowData: projectData.flowData ? { ...p.flowData, ...projectData.flowData } : p.flowData,
+              }
+            : p
+        );
+      } else {
+        const now = Date.now();
+        const newProject: Project = {
+          id: targetId,
+          name: projectData.name || 'Untitled Project',
+          createdAt: projectData.createdAt || now,
+          updatedAt: now,
+          comments: projectData.comments || '',
+          flowData: projectData.flowData || { nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 }, stoiRows: [] }
+        };
+        return [newProject, ...prev];
       }
     });
-  }, []);
+  }, [currentProjectId]);
 
   const deleteProject = useCallback((id: string) => {
     setProjects(prev => {
@@ -394,13 +427,85 @@ export const AppProvider = ({ children }: any) => {
     ));
   }, []);
 
+  const addNodeToCanvas = useCallback((newNode: any) => {
+    if (!newNode || !newNode.id) return;
+
+    // 1. Dispatch custom event for FlowCanvas to update its live React Flow state
+    window.dispatchEvent(new CustomEvent('app_add_canvas_node', { detail: newNode }));
+
+    // 2. Also update currentProject.flowData.nodes in projects state
+    setCurrentProjectId(currId => {
+      if (currId) {
+        setProjects(prev => prev.map(p => {
+          if (p.id === currId) {
+            const currentNodes = p.flowData?.nodes || [];
+            if (currentNodes.some((n: any) => n.id === newNode.id)) {
+              return p;
+            }
+            const updatedNodes = [...currentNodes, newNode];
+            return {
+              ...p,
+              updatedAt: Date.now(),
+              flowData: {
+                ...p.flowData,
+                nodes: updatedNodes,
+              }
+            };
+          }
+          return p;
+        }));
+      }
+      return currId;
+    });
+  }, []);
+
+  const applyToCanvasNode = useCallback((nodeId: string, dataPatch: any) => {
+    if (!nodeId || !dataPatch) return;
+
+    // 1. Dispatch custom event for FlowCanvas to update live React Flow state
+    window.dispatchEvent(new CustomEvent('app_apply_canvas_node', { detail: { id: nodeId, dataPatch } }));
+
+    // 2. Also update currentProject.flowData.nodes in projects state
+    setCurrentProjectId(currId => {
+      if (currId) {
+        setProjects(prev => prev.map(p => {
+          if (p.id === currId) {
+            const currentNodes = p.flowData?.nodes || [];
+            const updatedNodes = currentNodes.map((n: any) => {
+              if (n.id === nodeId) {
+                return {
+                  ...n,
+                  data: {
+                    ...(n.data || {}),
+                    ...dataPatch
+                  }
+                };
+              }
+              return n;
+            });
+            return {
+              ...p,
+              updatedAt: Date.now(),
+              flowData: {
+                ...p.flowData,
+                nodes: updatedNodes,
+              }
+            };
+          }
+          return p;
+        }));
+      }
+      return currId;
+    });
+  }, []);
+
   const currentProject = projects.find(p => p.id === currentProjectId) || null;
 
   return (
     <AppContext.Provider value={{ 
       stoiRows, setStoiRows,
       projects, deletedProjects, currentProjectId, currentProject,
-      saveProject, deleteProject, restoreProject, permanentlyDeleteProject, emptyBin, openProject, closeProject, updateProjectMeta,
+      saveProject, createProject, deleteProject, restoreProject, permanentlyDeleteProject, emptyBin, openProject, closeProject, updateProjectMeta,
       favorites, toggleFavorite,
       customModules, addCustomModule, updateCustomModule, deleteCustomModule, importCustomModules,
       isDarkMode, toggleDarkMode,
@@ -409,7 +514,9 @@ export const AppProvider = ({ children }: any) => {
       isMultiColorStreams, toggleStreamColorMode, setIsMultiColorStreams,
       customLogo, systemDefaultLogo, activeLogo, setCustomLogo, resetCustomLogo, setSystemDefaultLogo,
       logoHeight, setLogoHeight,
-      isBrandingModalOpen, setIsBrandingModalOpen
+      isBrandingModalOpen, setIsBrandingModalOpen,
+      isChemistryToolsModalOpen, setIsChemistryToolsModalOpen,
+      addNodeToCanvas, applyToCanvasNode
     }}>
       {children}
     </AppContext.Provider>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   SOLVENTS, 
   calculateElevatedBoilingPoint, 
@@ -184,25 +184,56 @@ export default function PressureBoilingPointCalculator() {
     };
   }, [selectedSolventId, targetTemp, activeMode, reverseResult.recommendedBprBar, pressureBar]);
 
-  // Generate VLE Curve points
+  // Dynamic temperature ceiling based on solvent boiling point
+  const minT = 0;
+  const maxT = useMemo(() => {
+    const bp = solvent.boilingPoint;
+    if (bp >= 170) return 350; // DMSO (189°C), NMP (202°C) -> 0 to 350°C
+    if (bp >= 130) return 300; // DMF (153°C), Xylene (138°C), Chlorobenzene (132°C) -> 0 to 300°C
+    if (bp >= 85) return 260;  // Water (100°C), Toluene (111°C), Butanol (118°C) -> 0 to 260°C
+    return 220;                // DCM (39.6°C), Ether (34.6°C), Acetone (56°C), THF (66°C), Acetonitrile (82°C)
+  }, [solvent.boilingPoint]);
+
+  // Dynamic X-axis tick positions
+  const xTicks = useMemo(() => {
+    const ticks: number[] = [];
+    for (let t = 0; t <= maxT; t += 50) {
+      ticks.push(t);
+    }
+    return ticks;
+  }, [maxT]);
+
+  // Auto-adjust default target temp when switching to high-boiling solvents like DMSO
+  const prevSolventIdRef = useRef(selectedSolventId);
+  useEffect(() => {
+    if (prevSolventIdRef.current !== selectedSolventId) {
+      prevSolventIdRef.current = selectedSolventId;
+      if (solvent.boilingPoint >= 150 && targetTemp < solvent.boilingPoint) {
+        setTargetTemp(Math.round(solvent.boilingPoint + 20));
+      } else if (targetTemp > maxT) {
+        setTargetTemp(maxT);
+      }
+    }
+  }, [selectedSolventId, solvent.boilingPoint, maxT, targetTemp]);
+
+  // Generate VLE Curve points up to dynamic maxT
   const vlePoints = useMemo(() => {
-    return generateVleCurveData(selectedSolventId, 0, 220, 60);
-  }, [selectedSolventId]);
+    return generateVleCurveData(selectedSolventId, minT, maxT, 70);
+  }, [selectedSolventId, minT, maxT]);
 
   // SVG Chart Dimensions & Scale calculations
-  const svgWidth = 560;
-  const svgHeight = 280;
-  const margin = { top: 25, right: 30, bottom: 42, left: 52 };
+  const svgWidth = 600;
+  const svgHeight = 290;
+  const margin = { top: 25, right: 30, bottom: 42, left: 68 };
   const plotWidth = svgWidth - margin.left - margin.right;
   const plotHeight = svgHeight - margin.top - margin.bottom;
 
-  const minT = 0;
-  const maxT = 220;
   const minP = 0;
   const maxP = 35; // bar
 
   const scaleX = (t: number) => margin.left + ((Math.max(minT, Math.min(maxT, t)) - minT) / (maxT - minT)) * plotWidth;
-  const scaleY = (p: number) => margin.top + (1 - (Math.max(minP, Math.min(maxP, p)) - minP) / (maxP - minP)) * plotHeight;
+  // Natural scaling without flat capping so curve ascends smoothly through plot boundaries
+  const scaleY = (p: number) => margin.top + (1 - (p - minP) / (maxP - minP)) * plotHeight;
 
   // Build SVG Path for VLE curve
   const vlePathD = useMemo(() => {
@@ -214,42 +245,90 @@ export default function PressureBoilingPointCalculator() {
     }).join(' ');
   }, [vlePoints]);
 
+  // Upper boundary of safety margin (Pvap + 2.0 bar)
+  const safetyBufferLineD = useMemo(() => {
+    if (!vlePoints || vlePoints.length === 0) return '';
+    return vlePoints.map((pt, idx) => {
+      const x = scaleX(pt.temp);
+      const y = scaleY(pt.pressureBar + 2.0);
+      return `${idx === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+    }).join(' ');
+  }, [vlePoints]);
+
   // Build Flash Evaporation (under curve) polygon
   const flashZoneD = useMemo(() => {
     if (!vlePoints || vlePoints.length === 0) return '';
     const pointsStr = vlePoints.map(pt => `${scaleX(pt.temp).toFixed(1)} ${scaleY(pt.pressureBar).toFixed(1)}`).join(' L ');
-    const bottomRight = `${scaleX(maxT).toFixed(1)} ${scaleY(0).toFixed(1)}`;
-    const bottomLeft = `${scaleX(minT).toFixed(1)} ${scaleY(0).toFixed(1)}`;
-    return `M ${scaleX(minT).toFixed(1)} ${scaleY(0).toFixed(1)} L ${pointsStr} L ${bottomRight} L ${bottomLeft} Z`;
+    const bottomRight = `${scaleX(maxT).toFixed(1)} ${scaleY(minP).toFixed(1)}`;
+    const bottomLeft = `${scaleX(minT).toFixed(1)} ${scaleY(minP).toFixed(1)}`;
+    return `M ${scaleX(minT).toFixed(1)} ${scaleY(minP).toFixed(1)} L ${pointsStr} L ${bottomRight} L ${bottomLeft} Z`;
+  }, [vlePoints, maxT]);
+
+  // Build Safety Margin buffer (+2 bar above VLE curve) polygon
+  const safetyMarginZoneD = useMemo(() => {
+    if (!vlePoints || vlePoints.length === 0) return '';
+    const forwardCurve = vlePoints.map(pt => `${scaleX(pt.temp).toFixed(1)} ${scaleY(pt.pressureBar).toFixed(1)}`).join(' L ');
+    const reverseBuffer = [...vlePoints].reverse().map(pt => `${scaleX(pt.temp).toFixed(1)} ${scaleY(pt.pressureBar + 2.0).toFixed(1)}`).join(' L ');
+    return `M ${scaleX(vlePoints[0].temp).toFixed(1)} ${scaleY(vlePoints[0].pressureBar).toFixed(1)} L ${forwardCurve} L ${reverseBuffer} Z`;
   }, [vlePoints]);
 
-  // Build Subcooled Liquid (above curve) polygon
+  // Build Subcooled Liquid (above safety buffer or above curve) polygon
   const subcooledZoneD = useMemo(() => {
     if (!vlePoints || vlePoints.length === 0) return '';
+    const startX = scaleX(vlePoints[0].temp).toFixed(1);
+    const startY = scaleY(vlePoints[0].pressureBar).toFixed(1);
     const pointsStr = vlePoints.map(pt => `${scaleX(pt.temp).toFixed(1)} ${scaleY(pt.pressureBar).toFixed(1)}`).join(' L ');
-    const topLeft = `${scaleX(minT).toFixed(1)} ${scaleY(maxP).toFixed(1)}`;
     const topRight = `${scaleX(maxT).toFixed(1)} ${scaleY(maxP).toFixed(1)}`;
-    return `M ${topLeft} L ${topRight} L ${pointsStr} Z`;
-  }, [vlePoints]);
+    const topLeft = `${scaleX(minT).toFixed(1)} ${scaleY(maxP).toFixed(1)}`;
+    return `M ${startX} ${startY} L ${pointsStr} L ${topRight} L ${topLeft} Z`;
+  }, [vlePoints, maxT]);
 
   // Hover state for interactive curve inspection
   const [hoverData, setHoverData] = useState<{ temp: number; pressure: number; x: number; y: number } | null>(null);
 
+  // Exact screen-to-viewBox SVG coordinate mapping
+  const getSvgCoordinates = (e: React.MouseEvent<SVGSVGElement>) => {
+    const svg = e.currentTarget;
+    try {
+      const pt = svg.createSVGPoint();
+      pt.x = e.clientX;
+      pt.y = e.clientY;
+      const ctm = svg.getScreenCTM();
+      if (ctm) {
+        return pt.matrixTransform(ctm.inverse()).x;
+      }
+    } catch {
+      // fallback
+    }
+    const rect = svg.getBoundingClientRect();
+    return ((e.clientX - rect.left) / rect.width) * svgWidth;
+  };
+
   const handleSvgMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clientX = e.clientX - rect.left;
-    const fracX = (clientX - margin.left) / plotWidth;
+    const svgX = getSvgCoordinates(e);
+    const fracX = (svgX - margin.left) / plotWidth;
     if (fracX >= 0 && fracX <= 1) {
       const t = minT + fracX * (maxT - minT);
-      const p = getVaporPressureBar(selectedSolventId, t);
+      const roundedT = Math.round(t);
+      const p = getVaporPressureBar(selectedSolventId, roundedT);
       setHoverData({
-        temp: Math.round(t),
+        temp: roundedT,
         pressure: p,
-        x: scaleX(t),
+        x: scaleX(roundedT),
         y: scaleY(p)
       });
     } else {
       setHoverData(null);
+    }
+  };
+
+  const handleSvgClick = (e: React.MouseEvent<SVGSVGElement>) => {
+    const svgX = getSvgCoordinates(e);
+    const fracX = (svgX - margin.left) / plotWidth;
+    if (fracX >= 0 && fracX <= 1) {
+      const t = Math.round(minT + fracX * (maxT - minT));
+      setTargetTemp(Math.max(20, Math.min(maxT, t)));
+      showFeedback(`Set target temperature to ${t}°C.`);
     }
   };
 
@@ -406,15 +485,15 @@ export default function PressureBoilingPointCalculator() {
       </div>
 
       {/* Solvent Selector Bar */}
-      <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 flex-1 min-w-0">
           <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 shrink-0">
             Selected Solvent:
           </label>
           <select
             value={selectedSolventId}
             onChange={(e) => setSelectedSolventId(e.target.value)}
-            className="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="w-full sm:w-auto flex-1 min-w-[220px] max-w-md bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 truncate"
           >
             {SOLVENTS.map((s) => (
               <option key={s.id} value={s.id}>
@@ -424,10 +503,19 @@ export default function PressureBoilingPointCalculator() {
           </select>
         </div>
 
-        <div className="flex items-center gap-4 text-xs font-mono text-slate-500 dark:text-slate-400">
-          <span>CAS: {solvent.cas}</span>
-          <span>Ambient bp: <strong className="text-slate-800 dark:text-slate-200">{solvent.boilingPoint}°C</strong></span>
-          <span>Antoine Range: [{solvent.antoine.tMin}°C to {solvent.antoine.tMax}°C]</span>
+        <div className="flex flex-wrap items-center gap-2 text-xs font-mono shrink-0">
+          <span className="whitespace-nowrap inline-flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-200/80 dark:border-slate-700/80">
+            <span className="text-slate-400 font-sans text-[11px] font-semibold">CAS:</span>
+            <strong className="text-slate-700 dark:text-slate-200 font-mono">{solvent.cas}</strong>
+          </span>
+          <span className="whitespace-nowrap inline-flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-200/80 dark:border-slate-700/80">
+            <span className="text-slate-400 font-sans text-[11px] font-semibold">Ambient bp:</span>
+            <strong className="text-slate-700 dark:text-slate-200 font-mono">{solvent.boilingPoint}°C</strong>
+          </span>
+          <span className="whitespace-nowrap inline-flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-200/80 dark:border-slate-700/80">
+            <span className="text-slate-400 font-sans text-[11px] font-semibold">Antoine:</span>
+            <span className="text-slate-600 dark:text-slate-300 font-mono">[{solvent.antoine.tMin}°C to {solvent.antoine.tMax}°C]</span>
+          </span>
         </div>
       </div>
 
@@ -476,23 +564,34 @@ export default function PressureBoilingPointCalculator() {
             className="w-full max-w-4xl mx-auto h-auto cursor-crosshair"
             onMouseMove={handleSvgMouseMove}
             onMouseLeave={() => setHoverData(null)}
+            onClick={handleSvgClick}
           >
             <defs>
+              <clipPath id="chartClip">
+                <rect x={margin.left} y={margin.top} width={plotWidth} height={plotHeight} />
+              </clipPath>
               <linearGradient id="subcooledGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#10b981" stopOpacity="0.18" />
-                <stop offset="100%" stopColor="#10b981" stopOpacity="0.04" />
+                <stop offset="0%" stopColor="#10b981" stopOpacity="0.22" />
+                <stop offset="100%" stopColor="#10b981" stopOpacity="0.08" />
+              </linearGradient>
+              <linearGradient id="safetyMarginGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.22" />
+                <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.08" />
               </linearGradient>
               <linearGradient id="flashGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.06" />
-                <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.22" />
+                <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.08" />
+                <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.24" />
               </linearGradient>
             </defs>
 
-            {/* Shaded Subcooled Liquid Zone */}
-            <path d={subcooledZoneD} fill="url(#subcooledGrad)" />
+            {/* Shaded Subcooled Liquid Zone (All space above VLE curve) */}
+            <path d={subcooledZoneD} fill="url(#subcooledGrad)" clipPath="url(#chartClip)" />
 
-            {/* Shaded Flash Evaporation Zone */}
-            <path d={flashZoneD} fill="url(#flashGrad)" />
+            {/* Shaded Safety Margin Buffer Zone (Pvap to Pvap + 2.0 bar) */}
+            <path d={safetyMarginZoneD} fill="url(#safetyMarginGrad)" clipPath="url(#chartClip)" />
+
+            {/* Shaded Flash Evaporation Zone (Below VLE curve) */}
+            <path d={flashZoneD} fill="url(#flashGrad)" clipPath="url(#chartClip)" />
 
             {/* Gridlines */}
             {[5, 10, 15, 20, 25, 30].map(p => (
@@ -507,8 +606,8 @@ export default function PressureBoilingPointCalculator() {
                   strokeDasharray="3 3"
                 />
                 <text
-                  x={margin.left - 8}
-                  y={scaleY(p) + 4}
+                  x={margin.left - 10}
+                  y={scaleY(p) + 3.5}
                   textAnchor="end"
                   fontSize="10"
                   className="fill-slate-400 font-mono"
@@ -518,7 +617,7 @@ export default function PressureBoilingPointCalculator() {
               </g>
             ))}
 
-            {[50, 100, 150, 200].map(t => (
+            {xTicks.map(t => (
               <g key={`grid-x-${t}`}>
                 <line
                   x1={scaleX(t)}
@@ -561,28 +660,39 @@ export default function PressureBoilingPointCalculator() {
               1 atm ({solvent.boilingPoint}°C ambient bp)
             </text>
 
-            {/* VLE Antoine Curve Line */}
+            {/* Safety Margin Upper Guideline (+2.0 bar cushion) */}
+            <path
+              d={safetyBufferLineD}
+              fill="none"
+              stroke="#f59e0b"
+              strokeWidth="1.2"
+              strokeDasharray="3 3"
+              clipPath="url(#chartClip)"
+            />
+
+            {/* VLE Antoine Curve Line (Pvap) */}
             <path
               d={vlePathD}
               fill="none"
-              stroke="#f59e0b"
+              stroke="#ea580c"
               strokeWidth="2.5"
+              clipPath="url(#chartClip)"
             />
 
             {/* Zone Inscription Labels inside Chart */}
             <text
-              x={margin.left + 24}
-              y={margin.top + 32}
-              className="fill-emerald-700/80 dark:fill-emerald-300/80 font-bold text-xs"
+              x={margin.left + 20}
+              y={margin.top + 28}
+              className="fill-emerald-700/90 dark:fill-emerald-300/90 font-bold text-xs"
             >
               ▲ SUBCOOLED LIQUID (Safe Single Phase)
             </text>
 
             <text
-              x={svgWidth - margin.right - 24}
+              x={svgWidth - margin.right - 20}
               y={svgHeight - margin.bottom - 16}
               textAnchor="end"
-              className="fill-rose-600/80 dark:fill-rose-400/80 font-bold text-xs"
+              className="fill-rose-600/90 dark:fill-rose-400/90 font-bold text-xs"
             >
               ▼ FLASH EVAPORATION / VAPOR POCKETS
             </text>
@@ -705,7 +815,7 @@ export default function PressureBoilingPointCalculator() {
 
             <text
               x={-margin.top - plotHeight / 2}
-              y="16"
+              y="20"
               transform="rotate(-90)"
               textAnchor="middle"
               fontSize="11"
@@ -726,14 +836,19 @@ export default function PressureBoilingPointCalculator() {
             {/* Input Controls */}
             <div className="lg:col-span-5 bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-5">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                  Target Reaction Operating Temperature
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    Target Reaction Operating Temperature
+                  </label>
+                  <span className="text-[11px] font-mono text-slate-400">
+                    Max: {maxT}°C
+                  </span>
+                </div>
                 <div className="flex items-center gap-3">
                   <input
                     type="range"
                     min="20"
-                    max="220"
+                    max={maxT}
                     step="1"
                     value={targetTemp}
                     onChange={(e) => setTargetTemp(parseFloat(e.target.value))}
@@ -744,15 +859,40 @@ export default function PressureBoilingPointCalculator() {
                       <input
                         type="number"
                         min="-50"
-                        max="300"
+                        max={maxT + 30}
                         step="1"
                         value={targetTemp}
                         onChange={(e) => setTargetTemp(parseFloat(e.target.value) || 20)}
-                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-sm font-bold text-slate-800 dark:text-slate-100 text-right pr-9"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-sm font-bold text-slate-800 dark:text-slate-100 text-right pr-9 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
-                      <span className="absolute right-2 top-2 text-xs font-mono text-slate-400">°C</span>
+                      <span className="absolute right-2 top-2 text-xs font-mono text-slate-400 pointer-events-none">°C</span>
                     </div>
                   </div>
+                </div>
+
+                {/* Quick Superheating Presets */}
+                <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 mr-1">Presets:</span>
+                  {[
+                    { label: `bp (${solvent.boilingPoint}°C)`, val: solvent.boilingPoint },
+                    { label: `+20°C (${solvent.boilingPoint + 20}°C)`, val: solvent.boilingPoint + 20 },
+                    { label: `+50°C (${solvent.boilingPoint + 50}°C)`, val: solvent.boilingPoint + 50 },
+                    { label: `+80°C (${solvent.boilingPoint + 80}°C)`, val: solvent.boilingPoint + 80 },
+                    ...(solvent.boilingPoint + 110 <= maxT ? [{ label: `+110°C (${solvent.boilingPoint + 110}°C)`, val: solvent.boilingPoint + 110 }] : [])
+                  ].filter(p => p.val <= maxT).map((p) => (
+                    <button
+                      key={p.val}
+                      type="button"
+                      onClick={() => setTargetTemp(p.val)}
+                      className={`text-[10px] font-mono px-2 py-0.5 rounded border transition-colors cursor-pointer ${
+                        targetTemp === p.val
+                          ? 'bg-amber-600 text-white border-amber-600 font-bold'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 hover:border-amber-300'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -895,9 +1035,9 @@ export default function PressureBoilingPointCalculator() {
                         step="0.5"
                         value={pressureBar}
                         onChange={(e) => setPressureBar(parseFloat(e.target.value) || 1)}
-                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-sm font-bold text-slate-800 dark:text-slate-100 text-right pr-9"
+                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-sm font-bold text-slate-800 dark:text-slate-100 text-right pr-9 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
-                      <span className="absolute right-2 top-2 text-xs font-mono text-slate-400">bar</span>
+                      <span className="absolute right-2 top-2 text-xs font-mono text-slate-400 pointer-events-none">bar</span>
                     </div>
                   </div>
                 </div>

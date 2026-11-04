@@ -779,7 +779,7 @@ const ReagentNode = ({ id, data }: any) => {
       <Handle 
         type="source" 
         position={Position.Right} 
-        style={{ backgroundColor: feedColor.stroke }}
+        style={{ backgroundColor: feedColor.stroke, top: '50%' }}
         className="w-2.5 h-2.5 border-2 border-white dark:border-slate-800 rounded-full shadow-xs transition-transform hover:scale-125" 
       />
     </div>
@@ -930,7 +930,7 @@ const StoiReagentNode = ({ id, data }: any) => {
       <Handle 
         type="source" 
         position={Position.Right} 
-        style={{ backgroundColor: feedColor.stroke }}
+        style={{ backgroundColor: feedColor.stroke, top: '50%' }}
         className="w-2.5 h-2.5 border-2 border-white dark:border-slate-800 rounded-full shadow-xs transition-transform hover:scale-125" 
       />
     </div>
@@ -1253,7 +1253,7 @@ const NodeWrapper = ({ id, label, CustomSvg, data, inputs = 1, outputs = 1, hasT
               type="target"
               position={Position.Left}
               id={`in${idx + 1}`}
-              style={{ top: `${((idx + 1) * 100) / (inputs + 1)}%` }}
+              style={{ top: `${((idx + 1) / (inputs + 1)) * 100}%` }}
               className={handleTargetClass}
             />
           ))}
@@ -1270,10 +1270,10 @@ const NodeWrapper = ({ id, label, CustomSvg, data, inputs = 1, outputs = 1, hasT
           <Handle type="target" position={Position.Left} id="in2" style={{ top: '70%' }} className={handleTargetClass} />
         </>
       ) : inputs === 1 ? (
-        <Handle type="target" position={Position.Left} className={handleTargetClass} />
+        <Handle type="target" position={Position.Left} style={{ top: '50%' }} className={handleTargetClass} />
       ) : null}
 
-      <div className="flex items-center justify-center min-h-[30px] my-0.5">
+      <div className="flex items-center justify-center h-8 my-0 w-full relative">
         {CustomSvg && <CustomSvg />}
       </div>
       
@@ -1422,7 +1422,7 @@ const NodeWrapper = ({ id, label, CustomSvg, data, inputs = 1, outputs = 1, hasT
               type="source"
               position={Position.Right}
               id={`out${idx + 1}`}
-              style={{ top: `${((idx + 1) * 100) / (outputs + 1)}%` }}
+              style={{ top: `${((idx + 1) / (outputs + 1)) * 100}%` }}
               className={handleSourceClass}
             />
           ))}
@@ -1439,7 +1439,7 @@ const NodeWrapper = ({ id, label, CustomSvg, data, inputs = 1, outputs = 1, hasT
           <Handle type="source" position={Position.Right} id="out2" style={{ top: '70%' }} className={handleSourceClass} />
         </>
       ) : outputs === 1 ? (
-        <Handle type="source" position={Position.Right} className={handleSourceClass} />
+        <Handle type="source" position={Position.Right} style={{ top: '50%' }} className={handleSourceClass} />
       ) : null}
     </div>
   );

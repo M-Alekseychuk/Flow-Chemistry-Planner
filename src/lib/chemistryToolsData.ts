@@ -25,6 +25,396 @@ export interface SolventData {
 
 export const SOLVENTS: SolventData[] = [
   {
+    id: 'acetic_acid',
+    name: 'Acetic Acid',
+    formula: 'CH₃COOH',
+    cas: '64-19-7',
+    molarMass: 60.05,
+    density: 1.0490,
+    boilingPoint: 118.1,
+    viscosity: 1.220,
+    dielectricConstant: 6.15,
+    antoine: { A: 7.188, B: 1416.7, C: 211.0, tMin: 20, tMax: 120 },
+    color: '#eab308'
+  },
+  {
+    id: 'acetone',
+    name: 'Acetone',
+    formula: 'C₃H₆O',
+    cas: '67-64-1',
+    molarMass: 58.08,
+    density: 0.7910,
+    boilingPoint: 56.1,
+    viscosity: 0.320,
+    dielectricConstant: 20.7,
+    antoine: { A: 7.02447, B: 1161.0, C: 224.0, tMin: -13, tMax: 55 },
+    color: '#f97316'
+  },
+  {
+    id: 'acetonitrile',
+    name: 'Acetonitrile',
+    formula: 'CH₃CN',
+    cas: '75-05-8',
+    molarMass: 41.05,
+    density: 0.7860,
+    boilingPoint: 81.6,
+    viscosity: 0.369,
+    dielectricConstant: 37.5,
+    antoine: { A: 7.0735, B: 1279.2, C: 224.0, tMin: -10, tMax: 100 },
+    color: '#6366f1'
+  },
+  {
+    id: 'benzene',
+    name: 'Benzene',
+    formula: 'C₆H₆',
+    cas: '71-43-2',
+    molarMass: 78.11,
+    density: 0.8765,
+    boilingPoint: 80.1,
+    viscosity: 0.652,
+    dielectricConstant: 2.28,
+    antoine: { A: 6.90565, B: 1211.03, C: 220.79, tMin: 8, tMax: 80 },
+    color: '#8b5cf6'
+  },
+  {
+    id: 'butanol',
+    name: 'Butanol',
+    formula: 'C₄H₁₀O',
+    cas: '71-36-3',
+    molarMass: 74.12,
+    density: 0.8100,
+    boilingPoint: 117.7,
+    viscosity: 2.980,
+    dielectricConstant: 17.8,
+    antoine: { A: 7.4768, B: 1362.39, C: 178.77, tMin: 30, tMax: 118 },
+    color: '#10b981'
+  },
+  {
+    id: 'butyl_acetate',
+    name: 'Butyl Acetate (n-)',
+    formula: 'C₆H₁₂O₂',
+    cas: '123-86-4',
+    molarMass: 116.16,
+    density: 0.8825,
+    boilingPoint: 126.1,
+    viscosity: 0.740,
+    dielectricConstant: 5.01,
+    antoine: { A: 7.144, B: 1445.0, C: 211.0, tMin: 20, tMax: 130 },
+    color: '#d97706'
+  },
+  {
+    id: 'carbon_tetrachloride',
+    name: 'Carbon Tetrachloride',
+    formula: 'CCl₄',
+    cas: '56-23-5',
+    molarMass: 153.82,
+    density: 1.5940,
+    boilingPoint: 76.7,
+    viscosity: 0.970,
+    dielectricConstant: 2.24,
+    antoine: { A: 6.9327, B: 1212.0, C: 226.4, tMin: 0, tMax: 80 },
+    color: '#ef4444'
+  },
+  {
+    id: 'chloroform',
+    name: 'Chloroform',
+    formula: 'CHCl₃',
+    cas: '67-66-3',
+    molarMass: 119.38,
+    density: 1.4890,
+    boilingPoint: 61.2,
+    viscosity: 0.560,
+    dielectricConstant: 4.81,
+    antoine: { A: 6.95465, B: 1170.97, C: 226.23, tMin: -10, tMax: 60 },
+    color: '#f43f5e'
+  },
+  {
+    id: 'cyclohexane',
+    name: 'Cyclohexane',
+    formula: 'C₆H₁₂',
+    cas: '110-82-7',
+    molarMass: 84.16,
+    density: 0.7785,
+    boilingPoint: 80.7,
+    viscosity: 1.020,
+    dielectricConstant: 2.02,
+    antoine: { A: 6.84498, B: 1203.53, C: 222.86, tMin: 20, tMax: 81 },
+    color: '#14b8a6'
+  },
+  {
+    id: 'dichloroethane',
+    name: 'Dichloroethane (1,2-)',
+    formula: 'C₂H₄Cl₂',
+    cas: '107-06-2',
+    molarMass: 98.96,
+    density: 1.2530,
+    boilingPoint: 83.5,
+    viscosity: 0.840,
+    dielectricConstant: 10.4,
+    antoine: { A: 7.0253, B: 1271.25, C: 222.93, tMin: 0, tMax: 85 },
+    color: '#ec4899'
+  },
+  {
+    id: 'dcm',
+    name: 'Dichloromethane',
+    formula: 'CH₂Cl₂',
+    cas: '75-09-2',
+    molarMass: 84.93,
+    density: 1.3266,
+    boilingPoint: 39.6,
+    viscosity: 0.440,
+    dielectricConstant: 8.93,
+    antoine: { A: 7.08036, B: 1138.91, C: 231.45, tMin: -40, tMax: 40 },
+    color: '#e11d48'
+  },
+  {
+    id: 'diethyl_ether',
+    name: 'Diethyl Ether',
+    formula: 'C₄H₁₀O',
+    cas: '60-29-7',
+    molarMass: 74.12,
+    density: 0.7134,
+    boilingPoint: 34.6,
+    viscosity: 0.230,
+    dielectricConstant: 4.33,
+    antoine: { A: 6.9862, B: 1090.64, C: 231.2, tMin: -15, tMax: 35 },
+    color: '#d97706'
+  },
+  {
+    id: 'diisopropyl_ether',
+    name: 'Diisopropyl Ether',
+    formula: 'C₆H₁₄O',
+    cas: '108-20-3',
+    molarMass: 102.17,
+    density: 0.7240,
+    boilingPoint: 68.5,
+    viscosity: 0.380,
+    dielectricConstant: 3.88,
+    antoine: { A: 6.940, B: 1205.0, C: 225.0, tMin: 10, tMax: 70 },
+    color: '#ca8a04'
+  },
+  {
+    id: 'dmf',
+    name: 'Dimethylformamide',
+    formula: 'C₃H₇NO',
+    cas: '68-12-2',
+    molarMass: 73.09,
+    density: 0.9440,
+    boilingPoint: 153.0,
+    viscosity: 0.920,
+    dielectricConstant: 36.7,
+    antoine: { A: 6.7725, B: 1475.0, C: 200.0, tMin: 50, tMax: 160 },
+    color: '#a21caf'
+  },
+  {
+    id: 'dmso',
+    name: 'Dimethyl Sulfoxide (DMSO)',
+    formula: 'C₂H₆OS',
+    cas: '67-68-5',
+    molarMass: 78.13,
+    density: 1.1004,
+    boilingPoint: 189.0,
+    viscosity: 1.996,
+    dielectricConstant: 46.7,
+    antoine: { A: 7.1856, B: 1667.0, C: 200.0, tMin: 20, tMax: 190 },
+    color: '#7c3aed'
+  },
+  {
+    id: 'dioxane',
+    name: 'Dioxane',
+    formula: 'C₄H₈O₂',
+    cas: '123-91-1',
+    molarMass: 88.11,
+    density: 1.0337,
+    boilingPoint: 101.1,
+    viscosity: 1.200,
+    dielectricConstant: 2.21,
+    antoine: { A: 7.0276, B: 1308.0, C: 216.0, tMin: 20, tMax: 105 },
+    color: '#2563eb'
+  },
+  {
+    id: 'ethanol',
+    name: 'Ethanol',
+    formula: 'C₂H₅OH',
+    cas: '64-17-5',
+    molarMass: 46.07,
+    density: 0.7893,
+    boilingPoint: 78.37,
+    viscosity: 1.200,
+    dielectricConstant: 24.5,
+    antoine: { A: 8.20417, B: 1642.89, C: 230.3, tMin: -3, tMax: 96 },
+    color: '#059669'
+  },
+  {
+    id: 'ethyl_acetate',
+    name: 'Ethyl Acetate',
+    formula: 'C₄H₈O₂',
+    cas: '141-78-6',
+    molarMass: 88.11,
+    density: 0.9020,
+    boilingPoint: 77.1,
+    viscosity: 0.450,
+    dielectricConstant: 6.02,
+    antoine: { A: 7.09808, B: 1238.71, C: 217.0, tMin: 16, tMax: 76 },
+    color: '#d97706'
+  },
+  {
+    id: 'heptane',
+    name: 'Heptane',
+    formula: 'C₇H₁₆',
+    cas: '142-82-5',
+    molarMass: 100.20,
+    density: 0.6840,
+    boilingPoint: 98.4,
+    viscosity: 0.390,
+    dielectricConstant: 1.92,
+    antoine: { A: 6.9024, B: 1268.12, C: 216.99, tMin: 26, tMax: 99 },
+    color: '#0284c7'
+  },
+  {
+    id: 'hexane',
+    name: 'Hexane',
+    formula: 'C₆H₁₄',
+    cas: '110-54-3',
+    molarMass: 86.18,
+    density: 0.6548,
+    boilingPoint: 68.7,
+    viscosity: 0.300,
+    dielectricConstant: 1.88,
+    antoine: { A: 6.87776, B: 1171.53, C: 224.37, tMin: 13, tMax: 70 },
+    color: '#0891b2'
+  },
+  {
+    id: 'isooctane',
+    name: 'Isooctane',
+    formula: 'C₈H₁₈',
+    cas: '540-84-1',
+    molarMass: 114.23,
+    density: 0.6920,
+    boilingPoint: 99.2,
+    viscosity: 0.500,
+    dielectricConstant: 1.94,
+    antoine: { A: 6.8118, B: 1257.84, C: 220.74, tMin: 20, tMax: 100 },
+    color: '#06b6d4'
+  },
+  {
+    id: 'isopropanol',
+    name: 'Isopropanol',
+    formula: 'C₃H₈O',
+    cas: '67-63-0',
+    molarMass: 60.10,
+    density: 0.7854,
+    boilingPoint: 82.5,
+    viscosity: 2.050,
+    dielectricConstant: 19.9,
+    antoine: { A: 8.11778, B: 1580.92, C: 219.61, tMin: 0, tMax: 101 },
+    color: '#0d9488'
+  },
+  {
+    id: 'methanol',
+    name: 'Methanol',
+    formula: 'CH₃OH',
+    cas: '67-56-1',
+    molarMass: 32.04,
+    density: 0.7914,
+    boilingPoint: 64.7,
+    viscosity: 0.544,
+    dielectricConstant: 32.7,
+    antoine: { A: 7.87863, B: 1473.11, C: 230.0, tMin: -11, tMax: 83 },
+    color: '#047857'
+  },
+  {
+    id: 'mek',
+    name: 'Methyl Ethyl Ketone (MEK)',
+    formula: 'C₄H₈O',
+    cas: '78-93-3',
+    molarMass: 72.11,
+    density: 0.8050,
+    boilingPoint: 79.6,
+    viscosity: 0.430,
+    dielectricConstant: 18.5,
+    antoine: { A: 6.974, B: 1209.6, C: 216.0, tMin: 0, tMax: 80 },
+    color: '#f59e0b'
+  },
+  {
+    id: 'mtbe',
+    name: 'Methyl Tert-Butyl Ether (MTBE)',
+    formula: 'C₅H₁₂O',
+    cas: '1634-04-4',
+    molarMass: 88.15,
+    density: 0.7405,
+    boilingPoint: 55.2,
+    viscosity: 0.360,
+    dielectricConstant: 4.50,
+    antoine: { A: 6.945, B: 1152.0, C: 223.0, tMin: 0, tMax: 60 },
+    color: '#ea580c'
+  },
+  {
+    id: 'pentane',
+    name: 'Pentane',
+    formula: 'C₅H₁₂',
+    cas: '109-66-0',
+    molarMass: 72.15,
+    density: 0.6260,
+    boilingPoint: 36.1,
+    viscosity: 0.220,
+    dielectricConstant: 1.84,
+    antoine: { A: 6.85221, B: 1064.63, C: 233.01, tMin: -20, tMax: 36 },
+    color: '#38bdf8'
+  },
+  {
+    id: 'propanol',
+    name: '1-Propanol',
+    formula: 'C₃H₈O',
+    cas: '71-23-8',
+    molarMass: 60.10,
+    density: 0.8030,
+    boilingPoint: 97.2,
+    viscosity: 1.940,
+    dielectricConstant: 20.1,
+    antoine: { A: 7.8477, B: 1499.2, C: 204.64, tMin: 15, tMax: 100 },
+    color: '#14b8a6'
+  },
+  {
+    id: 'thf',
+    name: 'Tetrahydrofuran (THF)',
+    formula: 'C₄H₈O',
+    cas: '109-99-9',
+    molarMass: 72.11,
+    density: 0.8876,
+    boilingPoint: 66.0,
+    viscosity: 0.480,
+    dielectricConstant: 7.58,
+    antoine: { A: 6.99515, B: 1202.29, C: 226.25, tMin: 23, tMax: 100 },
+    color: '#6366f1'
+  },
+  {
+    id: 'toluene',
+    name: 'Toluene',
+    formula: 'C₇H₈',
+    cas: '108-88-3',
+    molarMass: 92.14,
+    density: 0.8669,
+    boilingPoint: 110.6,
+    viscosity: 0.590,
+    dielectricConstant: 2.38,
+    antoine: { A: 6.95464, B: 1344.8, C: 219.48, tMin: 35, tMax: 111 },
+    color: '#4f46e5'
+  },
+  {
+    id: 'trichloroethylene',
+    name: 'Trichloroethylene',
+    formula: 'C₂HCl₃',
+    cas: '79-01-6',
+    molarMass: 131.39,
+    density: 1.4640,
+    boilingPoint: 87.2,
+    viscosity: 0.580,
+    dielectricConstant: 3.42,
+    antoine: { A: 7.028, B: 1315.0, C: 224.0, tMin: 10, tMax: 90 },
+    color: '#dc2626'
+  },
+  {
     id: 'water',
     name: 'Water',
     formula: 'H₂O',
@@ -38,212 +428,17 @@ export const SOLVENTS: SolventData[] = [
     color: '#0284c7'
   },
   {
-    id: 'methanol',
-    name: 'Methanol (MeOH)',
-    formula: 'CH₃OH',
-    cas: '67-56-1',
-    molarMass: 32.04,
-    density: 0.7914,
-    boilingPoint: 64.7,
-    viscosity: 0.544,
-    dielectricConstant: 32.7,
-    antoine: { A: 7.87863, B: 1473.11, C: 230.0, tMin: -11, tMax: 83 },
-    color: '#0d9488'
-  },
-  {
-    id: 'ethanol',
-    name: 'Ethanol (EtOH)',
-    formula: 'C₂H₅OH',
-    cas: '64-17-5',
-    molarMass: 46.07,
-    density: 0.7893,
-    boilingPoint: 78.37,
-    viscosity: 1.200,
-    dielectricConstant: 24.5,
-    antoine: { A: 8.20417, B: 1642.89, C: 230.3, tMin: -3, tMax: 96 },
-    color: '#10b981'
-  },
-  {
-    id: 'isopropanol',
-    name: 'Isopropanol (IPA)',
-    formula: 'C₃H₈O',
-    cas: '67-63-0',
-    molarMass: 60.10,
-    density: 0.7854,
-    boilingPoint: 82.5,
-    viscosity: 2.050,
-    dielectricConstant: 19.9,
-    antoine: { A: 8.11778, B: 1580.92, C: 219.61, tMin: 0, tMax: 101 },
-    color: '#14b8a6'
-  },
-  {
-    id: 'acetonitrile',
-    name: 'Acetonitrile (MeCN)',
-    formula: 'CH₃CN',
-    cas: '75-05-8',
-    molarMass: 41.05,
-    density: 0.7860,
-    boilingPoint: 81.6,
-    viscosity: 0.369,
-    dielectricConstant: 37.5,
-    antoine: { A: 7.0735, B: 1279.2, C: 224.0, tMin: -10, tMax: 100 },
-    color: '#6366f1'
-  },
-  {
-    id: 'thf',
-    name: 'Tetrahydrofuran (THF)',
-    formula: 'C₄H₈O',
-    cas: '109-99-9',
-    molarMass: 72.11,
-    density: 0.8876,
-    boilingPoint: 66.0,
-    viscosity: 0.480,
-    dielectricConstant: 7.58,
-    antoine: { A: 6.99515, B: 1202.29, C: 226.25, tMin: 23, tMax: 100 },
-    color: '#8b5cf6'
-  },
-  {
-    id: 'acetone',
-    name: 'Acetone',
-    formula: 'C₃H₆O',
-    cas: '67-64-1',
-    molarMass: 58.08,
-    density: 0.7910,
-    boilingPoint: 56.1,
-    viscosity: 0.320,
-    dielectricConstant: 20.7,
-    antoine: { A: 7.02447, B: 1161.0, C: 224.0, tMin: -13, tMax: 55 },
-    color: '#f59e0b'
-  },
-  {
-    id: 'dcm',
-    name: 'Dichloromethane (DCM)',
-    formula: 'CH₂Cl₂',
-    cas: '75-09-2',
-    molarMass: 84.93,
-    density: 1.3266,
-    boilingPoint: 39.6,
-    viscosity: 0.440,
-    dielectricConstant: 8.93,
-    antoine: { A: 7.08036, B: 1138.91, C: 231.45, tMin: -40, tMax: 40 },
-    color: '#ef4444'
-  },
-  {
-    id: 'ethyl_acetate',
-    name: 'Ethyl Acetate (EtOAc)',
-    formula: 'C₄H₈O₂',
-    cas: '141-78-6',
-    molarMass: 88.11,
-    density: 0.9020,
-    boilingPoint: 77.1,
-    viscosity: 0.450,
-    dielectricConstant: 6.02,
-    antoine: { A: 7.09808, B: 1238.71, C: 217.0, tMin: 16, tMax: 76 },
-    color: '#eab308'
-  },
-  {
-    id: 'dmf',
-    name: 'N,N-Dimethylformamide (DMF)',
-    formula: 'C₃H₇NO',
-    cas: '68-12-2',
-    molarMass: 73.09,
-    density: 0.9440,
-    boilingPoint: 153.0,
-    viscosity: 0.920,
-    dielectricConstant: 36.7,
-    antoine: { A: 6.7725, B: 1475.0, C: 200.0, tMin: 50, tMax: 160 },
-    color: '#ec4899'
-  },
-  {
-    id: 'dmso',
-    name: 'Dimethyl Sulfoxide (DMSO)',
-    formula: 'C₂H₆OS',
-    cas: '67-68-5',
-    molarMass: 78.13,
-    density: 1.1004,
-    boilingPoint: 189.0,
-    viscosity: 1.996,
-    dielectricConstant: 46.7,
-    antoine: { A: 7.1856, B: 1667.0, C: 200.0, tMin: 20, tMax: 190 },
-    color: '#a855f7'
-  },
-  {
-    id: 'toluene',
-    name: 'Toluene',
-    formula: 'C₇H₈',
-    cas: '108-88-3',
-    molarMass: 92.14,
-    density: 0.8669,
-    boilingPoint: 110.6,
-    viscosity: 0.590,
-    dielectricConstant: 2.38,
-    antoine: { A: 6.95464, B: 1344.8, C: 219.48, tMin: 35, tMax: 111 },
-    color: '#84cc16'
-  },
-  {
-    id: 'hexane',
-    name: 'n-Hexane',
-    formula: 'C₆H₁₄',
-    cas: '110-54-3',
-    molarMass: 86.18,
-    density: 0.6548,
-    boilingPoint: 68.7,
-    viscosity: 0.300,
-    dielectricConstant: 1.88,
-    antoine: { A: 6.87776, B: 1171.53, C: 224.37, tMin: 13, tMax: 70 },
-    color: '#06b6d4'
-  },
-  {
-    id: 'heptane',
-    name: 'n-Heptane',
-    formula: 'C₇H₁₆',
-    cas: '142-82-5',
-    molarMass: 100.20,
-    density: 0.6840,
-    boilingPoint: 98.4,
-    viscosity: 0.390,
-    dielectricConstant: 1.92,
-    antoine: { A: 6.9024, B: 1268.12, C: 216.99, tMin: 26, tMax: 99 },
-    color: '#0ea5e9'
-  },
-  {
-    id: 'dioxane',
-    name: '1,4-Dioxane',
-    formula: 'C₄H₈O₂',
-    cas: '123-91-1',
-    molarMass: 88.11,
-    density: 1.0337,
-    boilingPoint: 101.1,
-    viscosity: 1.200,
-    dielectricConstant: 2.21,
-    antoine: { A: 7.0276, B: 1308.0, C: 216.0, tMin: 20, tMax: 105 },
-    color: '#3b82f6'
-  },
-  {
-    id: 'chloroform',
-    name: 'Chloroform (CHCl₃)',
-    formula: 'CHCl₃',
-    cas: '67-66-3',
-    molarMass: 119.38,
-    density: 1.4890,
-    boilingPoint: 61.2,
-    viscosity: 0.560,
-    dielectricConstant: 4.81,
-    antoine: { A: 6.95465, B: 1170.97, C: 226.23, tMin: -10, tMax: 60 },
-    color: '#f43f5e'
-  },
-  {
-    id: 'ether',
-    name: 'Diethyl Ether (Et₂O)',
-    formula: 'C₄H₁₀O',
-    cas: '60-29-7',
-    molarMass: 74.12,
-    density: 0.7134,
-    boilingPoint: 34.6,
-    viscosity: 0.230,
-    dielectricConstant: 4.33,
-    antoine: { A: 6.9862, B: 1090.64, C: 231.2, tMin: -15, tMax: 35 },
-    color: '#d97706'
+    id: 'xylene',
+    name: 'Xylene',
+    formula: 'C₈H₁₀',
+    cas: '1330-20-7',
+    molarMass: 106.17,
+    density: 0.8640,
+    boilingPoint: 138.5,
+    viscosity: 0.620,
+    dielectricConstant: 2.40,
+    antoine: { A: 6.990, B: 1453.0, C: 215.0, tMin: 30, tMax: 140 },
+    color: '#9333ea'
   },
   {
     id: '2methf',
@@ -260,8 +455,9 @@ export const SOLVENTS: SolventData[] = [
   }
 ];
 
-// Helper to find solvent by ID
+// Helper to find solvent by ID with alias support
 export function getSolvent(id: string): SolventData {
+  if (id === 'ether') return getSolvent('diethyl_ether');
   return SOLVENTS.find(s => s.id === id) || SOLVENTS[0];
 }
 
@@ -561,74 +757,81 @@ export function calculateRequiredBPR(solventId: string, reactionTempCelsius: num
 
 export type MiscibilityType = 'miscible' | 'immiscible' | 'partially';
 
-// Curated pairwise miscibility lookup
-// Any pair not explicitly listed defaults to checking solubility heuristics
+// Curated pairwise miscibility lookup from standard laboratory benchmark chart
 const MISCIBILITY_OVERRIDES: Record<string, MiscibilityType> = {
-  // Water pairs
-  'water:methanol': 'miscible',
-  'water:ethanol': 'miscible',
-  'water:isopropanol': 'miscible',
-  'water:acetonitrile': 'miscible',
-  'water:thf': 'miscible',
-  'water:acetone': 'miscible',
-  'water:dmf': 'miscible',
-  'water:dmso': 'miscible',
-  'water:dioxane': 'miscible',
-  'water:dcm': 'immiscible',
+  // Acetic Acid pairs (immiscible with Hexane, Pentane)
+  'acetic_acid:hexane': 'immiscible',
+  'acetic_acid:pentane': 'immiscible',
+
+  // Acetonitrile pairs (immiscible with Cyclohexane, Heptane, Hexane, Isooctane, Pentane)
+  'acetonitrile:cyclohexane': 'immiscible',
+  'acetonitrile:heptane': 'immiscible',
+  'acetonitrile:hexane': 'immiscible',
+  'acetonitrile:isooctane': 'immiscible',
+  'acetonitrile:pentane': 'immiscible',
+
+  // Cyclohexane pairs (immiscible with Acetonitrile, DMF, DMSO, MeOH, Water)
+  'cyclohexane:dmf': 'immiscible',
+  'cyclohexane:dmso': 'immiscible',
+  'cyclohexane:methanol': 'immiscible',
+  'cyclohexane:water': 'immiscible',
+
+  // Diethyl Ether pairs
+  'diethyl_ether:dmso': 'immiscible',
+  'diethyl_ether:water': 'immiscible',
+  'ether:dmso': 'immiscible',
+  'ether:water': 'immiscible',
+
+  // Diisopropyl Ether pairs
+  'diisopropyl_ether:dmf': 'immiscible',
+  'diisopropyl_ether:water': 'immiscible',
+
+  // Dimethylformamide (DMF) pairs (immiscible with Cyclohexane, DIPE, Heptane, Hexane, Isooctane, Pentane, Xylene)
+  'dmf:heptane': 'immiscible',
+  'dmf:hexane': 'immiscible',
+  'dmf:isooctane': 'immiscible',
+  'dmf:pentane': 'immiscible',
+  'dmf:xylene': 'immiscible',
+
+  // Dimethyl Sulfoxide (DMSO) pairs (immiscible with Cyclohexane, Diethyl Ether, Heptane, Hexane, Isooctane, Pentane, Xylene)
+  'dmso:heptane': 'immiscible',
+  'dmso:hexane': 'immiscible',
+  'dmso:isooctane': 'immiscible',
+  'dmso:pentane': 'immiscible',
+  'dmso:xylene': 'immiscible',
+
+  // Methanol pairs (immiscible with Cyclohexane, Heptane, Hexane, Isooctane, Pentane)
+  'methanol:heptane': 'immiscible',
+  'methanol:hexane': 'immiscible',
+  'methanol:isooctane': 'immiscible',
+  'methanol:pentane': 'immiscible',
+
+  // Trichloroethylene pairs (immiscible with Water, Xylene)
+  'trichloroethylene:water': 'immiscible',
+  'trichloroethylene:xylene': 'immiscible',
+
+  // Water pairs (immiscible with nonpolar and water-insoluble organics)
+  'water:benzene': 'immiscible',
+  'water:butanol': 'immiscible',
+  'water:butyl_acetate': 'immiscible',
+  'water:carbon_tetrachloride': 'immiscible',
   'water:chloroform': 'immiscible',
-  'water:toluene': 'immiscible',
-  'water:hexane': 'immiscible',
+  'water:cyclohexane': 'immiscible',
+  'water:dichloroethane': 'immiscible',
+  'water:dcm': 'immiscible',
+  'water:diethyl_ether': 'immiscible',
+  'water:diisopropyl_ether': 'immiscible',
+  'water:ethyl_acetate': 'immiscible',
   'water:heptane': 'immiscible',
-  'water:ether': 'partially', // ~6.9% w/w water in ether
-  'water:ethyl_acetate': 'partially', // ~3.3% w/w water in EtOAc
-  'water:2methf': 'partially', // ~4.1% w/w
-
-  // DCM pairs
-  'dcm:hexane': 'miscible',
-  'dcm:heptane': 'miscible',
-  'dcm:toluene': 'miscible',
-  'dcm:ethyl_acetate': 'miscible',
-  'dcm:methanol': 'miscible',
-  'dcm:ethanol': 'miscible',
-  'dcm:thf': 'miscible',
-  'dcm:acetone': 'miscible',
-  'dcm:ether': 'miscible',
-  'dcm:chloroform': 'miscible',
-
-  // Hexane / Heptane pairs
-  'hexane:methanol': 'partially', // slightly miscible at RT
-  'hexane:ethanol': 'miscible',
-  'hexane:isopropanol': 'miscible',
-  'hexane:acetonitrile': 'immiscible',
-  'hexane:dmf': 'immiscible',
-  'hexane:dmso': 'immiscible',
-  'hexane:ethyl_acetate': 'miscible',
-  'hexane:thf': 'miscible',
-  'hexane:toluene': 'miscible',
-  'hexane:ether': 'miscible',
-
-  'heptane:methanol': 'partially',
-  'heptane:ethanol': 'miscible',
-  'heptane:acetonitrile': 'immiscible',
-  'heptane:dmf': 'immiscible',
-  'heptane:dmso': 'immiscible',
-  'heptane:ethyl_acetate': 'miscible',
-  'heptane:toluene': 'miscible',
-
-  // Acetonitrile pairs
-  'acetonitrile:toluene': 'miscible',
-  'acetonitrile:ethyl_acetate': 'miscible',
-  'acetonitrile:thf': 'miscible',
-  'acetonitrile:dcm': 'miscible',
-  'acetonitrile:chloroform': 'miscible',
-  'acetonitrile:ether': 'miscible',
-
-  // DMSO & DMF pairs
-  'dmso:toluene': 'miscible',
-  'dmso:ethyl_acetate': 'miscible',
-  'dmso:ether': 'partially',
-  'dmf:ether': 'miscible',
-  'dmf:toluene': 'miscible'
+  'water:hexane': 'immiscible',
+  'water:isooctane': 'immiscible',
+  'water:mek': 'immiscible',
+  'water:mtbe': 'immiscible',
+  'water:pentane': 'immiscible',
+  'water:toluene': 'immiscible',
+  'water:trichloroethylene': 'immiscible',
+  'water:xylene': 'immiscible',
+  'water:2methf': 'partially'
 };
 
 export function getMiscibility(solventAId: string, solventBId: string): {
@@ -639,20 +842,23 @@ export function getMiscibility(solventAId: string, solventBId: string): {
   densityDelta?: number;
   dielectricDelta: number;
 } {
-  if (solventAId === solventBId) {
-    const s = getSolvent(solventAId);
+  const normA = solventAId === 'ether' ? 'diethyl_ether' : solventAId;
+  const normB = solventBId === 'ether' ? 'diethyl_ether' : solventBId;
+
+  if (normA === normB) {
+    const s = getSolvent(normA);
     return {
       status: 'miscible',
-      description: 'Identical pure solvent (100% homogeneous).',
+      description: 'Identical pure solvent (100% homogeneous diagonal identity).',
       dielectricDelta: 0
     };
   }
 
-  const sA = getSolvent(solventAId);
-  const sB = getSolvent(solventBId);
+  const sA = getSolvent(normA);
+  const sB = getSolvent(normB);
 
-  const key1 = `${solventAId}:${solventBId}`;
-  const key2 = `${solventBId}:${solventAId}`;
+  const key1 = `${normA}:${normB}`;
+  const key2 = `${normB}:${normA}`;
 
   let status: MiscibilityType = MISCIBILITY_OVERRIDES[key1] || MISCIBILITY_OVERRIDES[key2] || 'miscible';
 
@@ -853,7 +1059,7 @@ export function calculateTemperatureViscosity(
 export function getVaporPressureBar(solventId: string, tempCelsius: number): number {
   const s = getSolvent(solventId);
   const { A, B, C } = s.antoine;
-  const clampedTemp = Math.max(-50, Math.min(300, tempCelsius));
+  const clampedTemp = Math.max(-50, Math.min(380, tempCelsius));
   const log10P_mmHg = A - (B / (clampedTemp + C));
   const p_mmHg = Math.pow(10, log10P_mmHg);
   const p_bar = p_mmHg / 750.06;
@@ -869,8 +1075,8 @@ export interface VlePoint {
 export function generateVleCurveData(
   solventId: string,
   minTemp: number = 0,
-  maxTemp: number = 220,
-  steps: number = 45
+  maxTemp: number = 350,
+  steps: number = 70
 ): VlePoint[] {
   const points: VlePoint[] = [];
   const stepSize = (maxTemp - minTemp) / steps;

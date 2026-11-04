@@ -7,6 +7,22 @@ import { CustomNodes, edgeTypes } from './CustomNodes';
 import ChemistryToolsHub from './chemistryTools/ChemistryToolsHub';
 import { v4 as uuidv4 } from 'uuid';
 
+export function formatProjectDate(timestamp?: number | string | Date | null): string {
+  if (!timestamp) return 'Recently';
+  const d = new Date(timestamp);
+  if (isNaN(d.getTime())) return String(timestamp);
+
+  const day = String(d.getDate()).padStart(2, '0');
+  const monthNames = [
+    'Jan.', 'Feb.', 'Mar.', 'Apr.', 'May.', 'Jun.',
+    'Jul.', 'Aug.', 'Sep.', 'Oct.', 'Nov.', 'Dec.'
+  ];
+  const month = monthNames[d.getMonth()];
+  const year = d.getFullYear();
+
+  return `${day}. ${month} ${year}`;
+}
+
 const MiniCanvas = ({ project }: { project: Project }) => {
   const nodes = useMemo(() => {
     const raw = project.flowData?.nodes || [];
@@ -55,6 +71,7 @@ export default function Dashboard() {
     projects, 
     deletedProjects, 
     saveProject, 
+    createProject,
     deleteProject, 
     restoreProject, 
     permanentlyDeleteProject, 
@@ -103,10 +120,11 @@ export default function Dashboard() {
   };
 
   const handleCreateNew = () => {
-    saveProject({
+    createProject({
       name: 'New Project',
       comments: ''
     });
+    showToast('New project created.');
   };
 
   const handleImportJson = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -245,7 +263,7 @@ export default function Dashboard() {
 
   return (
     <div className="flex-1 bg-slate-100 dark:bg-slate-950 overflow-y-auto p-4 sm:p-8 transition-colors relative">
-      <div className="max-w-5xl mx-auto">
+      <div className={`${activeTab === 'tools' ? 'max-w-7xl' : 'max-w-5xl'} mx-auto transition-all`}>
         {/* Toast Banner */}
         {toastMessage && (
           <div className="mb-6 bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 px-4 py-3 rounded-lg shadow-lg flex items-center justify-between transition-all animate-fadeIn">
@@ -435,8 +453,8 @@ export default function Dashboard() {
                             </div>
                           </div>
                           <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 font-mono shrink-0">
-                            Created: {new Date(p.createdAt).toLocaleDateString()}<br/>
-                            Edited: {new Date(p.updatedAt).toLocaleDateString()}
+                            Created: {formatProjectDate(p.createdAt)}<br/>
+                            Edited: {formatProjectDate(p.updatedAt)}
                           </p>
                           <div className="flex-1 min-h-0 overflow-hidden">
                             {p.comments ? (
@@ -493,7 +511,7 @@ export default function Dashboard() {
                         </span>
                       </div>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 font-mono shrink-0">
-                        Deleted: {p.deletedAt ? new Date(p.deletedAt).toLocaleDateString() : 'Recently'}
+                        Deleted: {formatProjectDate(p.deletedAt)}
                       </p>
                       <div className="flex-1 min-h-0 overflow-hidden">
                         {p.comments ? (

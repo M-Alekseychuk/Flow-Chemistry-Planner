@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import { toPng } from 'html-to-image';
-import { getNodesBounds, getViewportForBounds, Node, Edge } from '@xyflow/react';
+import { getNodesBounds, Node, Edge } from '@xyflow/react';
 import { Project } from '../types';
 import { getActiveLogoBase64 } from './branding';
 
@@ -37,52 +37,78 @@ export function getImageDimensions(dataUrl: string): Promise<{ width: number; he
 }
 
 /**
- * Capture high-DPI image of React Flow canvas diagram as a Data URL.
+ * Capture high-DPI image of React Flow canvas diagram as a Data URL with zero blur.
+ *
+ * CRITICAL ARCHITECTURE NOTE:
+ * Do NOT use CSS `scale(...)` inside html-to-image style transforms. Inside SVG foreignObject,
+ * browser rasterizers create an internal offscreen bitmap at native 1x CSS font resolution and
+ * then bilinearly stretch it, creating fuzzy, blurry text and lines.
+ * Instead, we keep CSS `scale: 1` and apply `pixelRatio: 3.5`, which forces the browser's
+ * font and vector graphics engine to rasterize glyphs and SVG paths directly at 350+ DPI.
  */
 export async function captureCanvasImage(
   nodes: Node[],
   viewportElement: HTMLElement,
-  isDarkMode = false
+  _isDarkMode = false
 ): Promise<{ dataUrl: string; width: number; height: number }> {
   const nodesBounds = getNodesBounds(nodes);
-  const padding = 80;
-  const rawWidth = (nodesBounds.width || 800) + padding * 2;
-  const rawHeight = (nodesBounds.height || 600) + padding * 2;
+  // Clean, tight padding around the modules so the schematic fills the page legibly
+  const padding = 28;
+  const contentWidth = Math.ceil((nodesBounds.width || 800) + padding * 2);
+  const contentHeight = Math.ceil((nodesBounds.height || 600) + padding * 2);
 
-  // Ultra-crisp export resolution
-  const minTargetRes = 2400;
-  const scaleFactor = Math.max(1.5, minTargetRes / Math.max(rawWidth, rawHeight));
-  const exportWidth = Math.round(rawWidth * scaleFactor);
-  const exportHeight = Math.round(rawHeight * scaleFactor);
+  // Translate coordinates so top-left of the bounding box aligns with (padding, padding)
+  const translateX = -nodesBounds.x + padding;
+  const translateY = -nodesBounds.y + padding;
 
-  const transform = getViewportForBounds(
-    nodesBounds,
-    exportWidth,
-    exportHeight,
-    0.1,
-    4,
-    0.08
-  );
-
-  const canvasBg = '#ffffff'; // Always clean white background for reports
+  // Ultra-crisp export: dynamically size pixelRatio for 3200+ physical pixels resolution
+  const longestDimension = Math.max(contentWidth, contentHeight);
+  const pixelRatio = Math.min(4.0, Math.max(3.0, 3200 / longestDimension));
 
   const dataUrl = await toPng(viewportElement, {
-    backgroundColor: canvasBg,
-    width: exportWidth,
-    height: exportHeight,
-    pixelRatio: 2.5,
+    backgroundColor: '#ffffff', // Clean engineering white background
+    width: contentWidth,
+    height: contentHeight,
+    pixelRatio,
+    cacheBust: true,
     style: {
-      width: `${exportWidth}px`,
-      height: `${exportHeight}px`,
-      transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.zoom})`,
+      width: `${contentWidth}px`,
+      height: `${contentHeight}px`,
+      transform: `translate(${translateX}px, ${translateY}px)`,
+      transformOrigin: '0 0',
+    },
+    filter: (domNode: HTMLElement) => {
+      // Exclude interactive selection boxes and connection drag handles
+      if (domNode.classList) {
+        if (
+          domNode.classList.contains('react-flow__handle-connecting') ||
+          domNode.classList.contains('react-flow__selection')
+        ) {
+          return false;
+        }
+      }
+      // Exclude interactive deletion/trash buttons to keep the schematic pristine
+      if (domNode.tagName === 'BUTTON') {
+        const title = domNode.getAttribute('title') || '';
+        const aria = domNode.getAttribute('aria-label') || '';
+        if (title.includes('Delete') || title.includes('Remove') || aria.includes('Delete')) {
+          return false;
+        }
+      }
+      return true;
     },
   });
 
-  return { dataUrl, width: exportWidth, height: exportHeight };
+  return {
+    dataUrl,
+    width: Math.round(contentWidth * pixelRatio),
+    height: Math.round(contentHeight * pixelRatio),
+  };
 }
 
 /**
- * Generate and export a branded PDF with the organization's custom Base64 logo.
+ * Generate and export a branded PDF with the exact logo displayed in the software (top-right),
+ * project title & description (top-left), no enclosing scheme border, and clean layout with no bottom footer.
  */
 export async function exportBrandedPdf(options: ReportGenerationOptions): Promise<void> {
   const { project, nodes, viewportElement, customLogo, setupPhoto, setupPhotoCaption } = options;
@@ -90,18 +116,36 @@ export async function exportBrandedPdf(options: ReportGenerationOptions): Promis
     throw new Error('Canvas has no equipment modules to export.');
   }
 
-  // 1. Capture diagram & load Base64 logo in parallel
-  const [canvasCapture, logoBase64] = await Promise.all([
+  // 1. Retrieve the single active logo currently displayed in the software
+  const activeLogoBase64 = await getActiveLogoBase64(customLogo);
+
+  // Load canvas capture and logo natural dimensions in parallel
+  const [canvasCapture, logoDims] = await Promise.all([
     captureCanvasImage(nodes, viewportElement, false),
-    getActiveLogoBase64(customLogo),
+    getImageDimensions(activeLogoBase64),
   ]);
 
   const { dataUrl: diagramDataUrl, width: diagW, height: diagH } = canvasCapture;
 
-  // 2. Setup PDF document (A4 Landscape or custom high-res)
+  // Setup PDF document (adapt landscape height to schematic aspect ratio to eliminate dead space)
   const isLandscape = diagW >= diagH;
-  const pdfWidth = isLandscape ? 1120 : 840;
-  const pdfHeight = isLandscape ? 790 : 1120;
+  const diagramAspect = diagW / Math.max(diagH, 1);
+
+  let pdfWidth = 1140;
+  let pdfHeight = 780;
+
+  if (isLandscape) {
+    if (diagramAspect > 2.2) {
+      pdfWidth = 1160;
+      pdfHeight = Math.max(680, Math.min(780, Math.round(1160 / Math.min(diagramAspect, 2.5)) + 120));
+    } else {
+      pdfWidth = 1140;
+      pdfHeight = 800;
+    }
+  } else {
+    pdfWidth = 840;
+    pdfHeight = 1140;
+  }
 
   const pdf = new jsPDF({
     orientation: isLandscape ? 'landscape' : 'portrait',
@@ -113,29 +157,6 @@ export async function exportBrandedPdf(options: ReportGenerationOptions): Promis
   const margin = 36;
   const headerHeight = 70;
 
-  // Header Background bar
-  pdf.setFillColor(248, 250, 252); // slate-50
-  pdf.rect(0, 0, pdfWidth, headerHeight, 'F');
-
-  // Separator line
-  pdf.setDrawColor(226, 232, 240); // slate-200
-  pdf.setLineWidth(1.5);
-  pdf.line(0, headerHeight, pdfWidth, headerHeight);
-
-  // Embed Logo in Top-Left
-  try {
-    const logoMaxW = 140;
-    const logoMaxH = 46;
-    pdf.addImage(logoBase64, 'PNG', margin, 12, logoMaxW, logoMaxH, undefined, 'FAST');
-  } catch (e) {
-    console.warn('Could not render logo in PDF, drawing text fallback:', e);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(14);
-    pdf.setTextColor(15, 23, 42);
-    pdf.text('FLOW CHEMISTRY SUITE', margin, 38);
-  }
-
-  // Project title & timestamp on Top-Right
   const projectName = project?.name || 'Untitled Flow Chemistry Process';
   const exportDateStr = new Date().toLocaleDateString(undefined, {
     year: 'numeric',
@@ -145,17 +166,91 @@ export async function exportBrandedPdf(options: ReportGenerationOptions): Promis
     minute: '2-digit',
   });
 
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(16);
-  pdf.setTextColor(15, 23, 42);
-  pdf.text(projectName, pdfWidth - margin, 32, { align: 'right' });
+  // Render Branded Header Helper for Page 1 & Page 2
+  const renderHeader = (isPage2 = false) => {
+    // Header Background Bar
+    pdf.setFillColor(248, 250, 252); // slate-50
+    pdf.rect(0, 0, pdfWidth, headerHeight, 'F');
 
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(10);
-  pdf.setTextColor(100, 116, 139);
-  pdf.text(`Exported: ${exportDateStr}  |  ${nodes.length} Equipment Modules`, pdfWidth - margin, 48, { align: 'right' });
+    // Divider Line
+    pdf.setDrawColor(226, 232, 240); // slate-200
+    pdf.setLineWidth(1.5);
+    pdf.line(0, headerHeight, pdfWidth, headerHeight);
 
-  // Draw Main Schematic Diagram
+    // 1. Single Active Logo in Top-Right Corner (the exact logo displayed in the software)
+    const logoMaxH = 44;
+    const logoMaxW = 155;
+    const logoAspect = logoDims.width / Math.max(logoDims.height, 1);
+    let logoH = logoMaxH;
+    let logoW = Math.round(logoH * logoAspect);
+    if (logoW > logoMaxW) {
+      logoW = logoMaxW;
+      logoH = Math.round(logoW / logoAspect);
+    }
+    const logoX = pdfWidth - margin - logoW;
+    const logoY = Math.round((headerHeight - logoH) / 2);
+
+    try {
+      pdf.addImage(activeLogoBase64, 'PNG', logoX, logoY, logoW, logoH, undefined, 'SLOW');
+    } catch (e) {
+      console.warn('Could not render logo in header:', e);
+    }
+
+    // 2. Project Title & Description on Left (Clean start at margin)
+    const textStartX = margin;
+    const textMaxWidth = logoX - textStartX - 20;
+
+    if (!isPage2) {
+      // Page 1: Process Diagram Details
+      const projectDescription = project?.comments?.trim() || (project as any)?.description?.trim() || '';
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(15);
+      pdf.setTextColor(15, 23, 42); // slate-900
+
+      if (projectDescription) {
+        pdf.text(projectName, textStartX, 25, { maxWidth: textMaxWidth });
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(9.5);
+        pdf.setTextColor(71, 85, 105); // slate-600
+        pdf.text(projectDescription, textStartX, 40, { maxWidth: textMaxWidth });
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8);
+        pdf.setTextColor(148, 163, 184); // slate-400
+        pdf.text(`Exported: ${exportDateStr}`, textStartX, 54, { maxWidth: textMaxWidth });
+      } else {
+        pdf.text(projectName, textStartX, 30, { maxWidth: textMaxWidth });
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8.5);
+        pdf.setTextColor(148, 163, 184); // slate-400
+        pdf.text(`Exported: ${exportDateStr}`, textStartX, 46, { maxWidth: textMaxWidth });
+      }
+    } else {
+      // Page 2: Physical Setup Details
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(14.5);
+      pdf.setTextColor(15, 23, 42);
+      pdf.text(projectName, textStartX, 27, { maxWidth: textMaxWidth });
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9.5);
+      pdf.setTextColor(5, 150, 105); // emerald-600
+      pdf.text('Actual Physical Laboratory Setup Documentation', textStartX, 42, { maxWidth: textMaxWidth });
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 116, 139);
+      pdf.text(`Attached Setup Photo   |   Exported: ${exportDateStr}`, textStartX, 55, { maxWidth: textMaxWidth });
+    }
+  };
+
+  // Render Page 1 Header
+  renderHeader(false);
+
+  // Draw Main Schematic Diagram with Lossless Compression (Border removed per user specification)
   const availW = pdfWidth - margin * 2;
   const availH = pdfHeight - headerHeight - margin * 2;
 
@@ -170,74 +265,22 @@ export async function exportBrandedPdf(options: ReportGenerationOptions): Promis
   const renderX = margin + (availW - renderW) / 2;
   const renderY = headerHeight + margin / 2 + (availH - renderH) / 2;
 
-  // Diagram border container
-  pdf.setFillColor(255, 255, 255);
-  pdf.roundedRect(renderX - 4, renderY - 4, renderW + 8, renderH + 8, 4, 4, 'F');
-  pdf.setDrawColor(226, 232, 240);
-  pdf.roundedRect(renderX - 4, renderY - 4, renderW + 8, renderH + 8, 4, 4, 'S');
+  // Embed schematic directly onto clean canvas with 'SLOW' (lossless Flate) compression with no border
+  pdf.addImage(diagramDataUrl, 'PNG', renderX, renderY, renderW, renderH, undefined, 'SLOW');
 
-  pdf.addImage(diagramDataUrl, 'PNG', renderX, renderY, renderW, renderH, undefined, 'FAST');
-
-  // Bottom footer watermark for Page 1
-  pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(8);
-  pdf.setTextColor(148, 163, 184);
-  pdf.text(
-    setupPhoto
-      ? 'Flow Chemistry Process Diagram & Experimental Design  •  Page 1: Schematic (Actual Setup Photo Attached on Page 2)'
-      : 'Flow Chemistry Process Diagram & Experimental Design  •  Offline Branded Document',
-    margin,
-    pdfHeight - 14
-  );
-
-  // 3. Attach Setup Photo Page at end of document if provided
+  // Attach Setup Photo Page if provided
   if (setupPhoto) {
     const photoDims = await getImageDimensions(setupPhoto);
     const photoW = photoDims.width || 800;
     const photoH = photoDims.height || 600;
 
-    // Use same dimensions or adapt
     const page2Width = pdfWidth;
     const page2Height = pdfHeight;
 
     pdf.addPage([page2Width, page2Height], isLandscape ? 'landscape' : 'portrait');
 
-    // Header Background bar on Page 2
-    pdf.setFillColor(248, 250, 252);
-    pdf.rect(0, 0, page2Width, headerHeight, 'F');
-
-    // Separator line
-    pdf.setDrawColor(226, 232, 240);
-    pdf.setLineWidth(1.5);
-    pdf.line(0, headerHeight, page2Width, headerHeight);
-
-    // Embed Logo
-    try {
-      const logoMaxW = 140;
-      const logoMaxH = 46;
-      pdf.addImage(logoBase64, 'PNG', margin, 12, logoMaxW, logoMaxH, undefined, 'FAST');
-    } catch {
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(14);
-      pdf.setTextColor(15, 23, 42);
-      pdf.text('FLOW CHEMISTRY SUITE', margin, 38);
-    }
-
-    // Title on right: Project Name - Actual Experimental Setup
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(15);
-    pdf.setTextColor(15, 23, 42);
-    pdf.text(projectName, page2Width - margin, 28, { align: 'right' });
-
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(11);
-    pdf.setTextColor(5, 150, 105); // emerald-600
-    pdf.text('Actual Experimental Setup Photo', page2Width - margin, 44, { align: 'right' });
-
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(9);
-    pdf.setTextColor(100, 116, 139);
-    pdf.text(`Attached Document: Setup Configuration  |  ${exportDateStr}`, page2Width - margin, 58, { align: 'right' });
+    // Page 2 Branded Header with Software Logo on Top-Right
+    renderHeader(true);
 
     // Available area for setup picture & caption
     const captionReservedH = setupPhotoCaption?.trim() ? 50 : 34;
@@ -262,9 +305,9 @@ export async function exportBrandedPdf(options: ReportGenerationOptions): Promis
     pdf.setLineWidth(1.5);
     pdf.roundedRect(renderPhotoX - 6, renderPhotoY - 6, renderPhotoW + 12, renderPhotoH + 12, 6, 6, 'S');
 
-    // Add Image
+    // Add Image with lossless compression
     const imgFormat = setupPhoto.includes('image/jpeg') || setupPhoto.includes('image/jpg') ? 'JPEG' : 'PNG';
-    pdf.addImage(setupPhoto, imgFormat, renderPhotoX, renderPhotoY, renderPhotoW, renderPhotoH, undefined, 'FAST');
+    pdf.addImage(setupPhoto, imgFormat, renderPhotoX, renderPhotoY, renderPhotoW, renderPhotoH, undefined, 'SLOW');
 
     // Caption Box below picture
     const captionY = renderPhotoY + renderPhotoH + 16;
@@ -279,18 +322,9 @@ export async function exportBrandedPdf(options: ReportGenerationOptions): Promis
       pdf.setTextColor(71, 85, 105);
       pdf.text(setupPhotoCaption.trim(), renderPhotoX, captionY + 14, { maxWidth: renderPhotoW });
     }
-
-    // Page 2 Footer
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(8);
-    pdf.setTextColor(148, 163, 184);
-    pdf.text(
-      'Flow Chemistry Process Diagram & Experimental Design  •  Attached Setup Documentation  •  Page 2',
-      margin,
-      page2Height - 14
-    );
   }
 
   const safeFilename = (projectName.replace(/[^a-z0-9_-]/gi, '_') || 'project') + '_report.pdf';
   pdf.save(safeFilename);
 }
+

@@ -120,6 +120,10 @@ export function getActiveLogo(customLogo?: string | null): string {
   if (customLogo && customLogo.trim().length > 0) {
     return customLogo;
   }
+  const storedCustom = getStoredCustomLogo();
+  if (storedCustom && storedCustom.trim().length > 0) {
+    return storedCustom;
+  }
   const systemDefault = getStoredSystemDefaultLogo();
   if (systemDefault && systemDefault.trim().length > 0) {
     return systemDefault;
@@ -134,6 +138,11 @@ export function getActiveLogo(customLogo?: string | null): string {
 export async function getActiveLogoBase64(customLogo?: string | null): Promise<string> {
   if (customLogo && customLogo.startsWith('data:image/')) {
     return customLogo;
+  }
+
+  const storedCustom = getStoredCustomLogo();
+  if (storedCustom && storedCustom.startsWith('data:image/')) {
+    return storedCustom;
   }
 
   const systemDefault = getStoredSystemDefaultLogo();

@@ -1,6 +1,6 @@
 # Flow Chemistry Designer
 
-A browser-based visual diagramming, hydraulic modeling, and process engineering calculation suite designed specifically for continuous flow chemistry and process development.
+A beginner friendly, graphical continuous flow chemistry planning tool that allows for visuallizion of complex setups by draging standardized (or custom) modules onto a canvas and conncting them. 
 
 ---
 
@@ -9,12 +9,12 @@ A browser-based visual diagramming, hydraulic modeling, and process engineering 
 - **Interactive Flow Process Canvas**:
   - Drag-and-drop nodal builder powered by `@xyflow/react`.
   - Comprehensive equipment library: Coil Reactors, Microreactors, Column Reactors, Photoreactors, Tube-in-Tube, CSTRs, Packed Beds, Syringe Pumps, HPLC Pumps, Peristaltic Pumps, Gear Pumps, Mass Flow Controllers (MFC), Back-Pressure Regulators (BPR), Pressure/Temperature Sensors, and Liquid-Liquid Membrane Separators (Zaiput).
-  - Multi-level Undo/Redo (`Cmd+Z` / `Ctrl+Z`, `Cmd+Shift+Z` / `Ctrl+Y`) and snap-to-grid support.
+  - Snap-to-grid support.
   - Interactive tubing edges with in-line physical dimensions (inner diameter, length, material) and real-time hydraulic metrics.
 
 - **Real-Time Hydraulic & Stoichiometric Simulation**:
-  - Forward topological sort simulating volumetric flow rates ($Q$), residence times ($\tau$), concentrations ($C$), and Hagen-Poiseuille pressure drops ($\Delta P$).
-  - Stoichiometric equivalence balancer automatically calculating pump delivery rates from concentration and limiting reagent benchmarks.
+  - Forward topological sort simulating volumetric flow rates ($Q$), residence times ($\tau$), and concentrations ($C$).
+  - Stoichiometric equivalence balancer automatically calculating pump delivery rates from concentration and limiting reagent.
   - Two-way real-time synchronization between the sidebar **Feed Solutions** table and canvas modules.
 
 - **Accessibility & Custom Stream Modes**:
@@ -32,8 +32,8 @@ A browser-based visual diagramming, hydraulic modeling, and process engineering 
   - Build custom modules with tailored ports (0 to 4 inputs/outputs), bespoke fields, unit selectors, and custom uploaded equipment photos.
   - Embedded portability: Custom modules travel with exported project JSON files.
 
-- **Branded Executive PDF Export**:
-  - High-resolution vector diagrams paired with equipment Bill of Materials (BOM), operating conditions, and customizable lab logo branding.
+- **High-resolution PDF Export**:
+  - High-resolution vector diagrams displaying operating parameters, branded customizable lab logo.
 
 ---
 
@@ -44,22 +44,23 @@ A browser-based visual diagramming, hydraulic modeling, and process engineering 
 - npm or bun
 
 ### Installation
+
+Either install latest version release (.exe)
+
+or
+
 ```bash
-git clone <repository-url>
-cd flow-chemistry-designer
+# 1. Install dependencies
 npm install
-```
 
-### Running Locally
-```bash
+# 2. Start local development server (Port 3000)
 npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### Type-Checking & Verification
-```bash
-npm run lint    # Runs tsc --noEmit
-npm run build   # Builds production bundle
+# 3. Type-check & lint
+npm run lint
+
+# 4. Production build
+npm run build
 ```
 
 ---
@@ -87,4 +88,5 @@ docs/
 ---
 
 ## License
-MIT
+
+GNU General Public License (GPL-3.0; https://www.gnu.org/licenses/gpl-3.0.html)

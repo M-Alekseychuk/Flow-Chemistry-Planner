@@ -1273,17 +1273,17 @@ const NodeWrapper = ({ id, label, CustomSvg, data, inputs = 1, outputs = 1, hasT
         <Handle type="target" position={Position.Left} style={{ top: '50%' }} className={handleTargetClass} />
       ) : null}
 
-      <div className="flex items-center justify-center h-8 my-0 w-full relative">
+      <div className="flex items-center justify-center min-h-[32px] h-auto my-0 w-full relative shrink-0">
         {CustomSvg && <CustomSvg />}
       </div>
       
-      {typeof label === 'string' ? (
-        <span className="text-[9.5px] font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap text-center max-w-[100px] overflow-hidden text-ellipsis leading-tight tracking-tight">
+      {typeof label === 'string' && label.trim().length > 0 ? (
+        <span className="text-[9.5px] font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap text-center max-w-full px-1 overflow-hidden text-ellipsis leading-tight tracking-tight">
           {label}
         </span>
-      ) : (
+      ) : typeof label !== 'string' ? (
         label
-      )}
+      ) : null}
       {data?.details && <span className="text-[8px] font-normal text-slate-400 dark:text-slate-400">{data.details}</span>}
       
       {hasVolume && (
@@ -1779,10 +1779,27 @@ const CustomModuleNode = (props: any) => {
 
   const currentImageSize = props.data?.imageSize ?? config.imageSize ?? 48;
 
+  const setImageSize = (newSize: number) => {
+    const clamped = Math.max(24, Math.min(180, newSize));
+    setNodes((nds) =>
+      nds.map((n) =>
+        n.id === props.id
+          ? {
+              ...n,
+              data: {
+                ...n.data,
+                imageSize: clamped,
+              },
+            }
+          : n
+      )
+    );
+  };
+
   const renderGraphic = () => {
     if (config.imageUrl) {
       return (
-        <div className="flex flex-col items-center justify-center relative">
+        <div className="flex flex-col items-center justify-center relative w-full group/img py-0.5">
           <img
             src={config.imageUrl}
             alt={config.name}
@@ -1790,8 +1807,36 @@ const CustomModuleNode = (props: any) => {
               maxHeight: `${currentImageSize}px`,
               maxWidth: `${Math.round(currentImageSize * 1.8)}px`,
             }}
-            className="w-auto h-auto object-contain rounded select-none pointer-events-none transition-all duration-150"
+            className="w-auto h-auto object-contain rounded select-none pointer-events-none transition-all duration-150 block"
           />
+          {/* Subtle on-canvas resize nudge controls on hover */}
+          <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-white/95 dark:bg-slate-800/95 shadow-md border border-slate-200 dark:border-slate-700 rounded-full px-1.5 py-0.5 opacity-0 group-hover/img:opacity-100 transition-opacity z-20 nodrag">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setImageSize(currentImageSize - 8);
+              }}
+              className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
+              title="Make picture smaller"
+            >
+              −
+            </button>
+            <span className="text-[8px] font-mono text-slate-500 dark:text-slate-400 select-none px-0.5">
+              {currentImageSize}px
+            </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setImageSize(currentImageSize + 8);
+              }}
+              className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer"
+              title="Make picture larger"
+            >
+              +
+            </button>
+          </div>
         </div>
       );
     }

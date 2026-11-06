@@ -324,7 +324,8 @@ export default function CustomModuleModal({
                         { label: 'Default', size: 48 },
                         { label: 'Medium', size: 64 },
                         { label: 'Large', size: 88 },
-                        { label: 'XL', size: 112 },
+                        { label: 'XL', size: 120 },
+                        { label: '2XL', size: 150 },
                       ].map((preset) => (
                         <button
                           key={preset.size}
@@ -354,7 +355,7 @@ export default function CustomModuleModal({
                       <input
                         type="range"
                         min="24"
-                        max="140"
+                        max="160"
                         step="2"
                         value={imageSize}
                         onChange={(e) => setImageSize(parseInt(e.target.value, 10))}
@@ -362,7 +363,7 @@ export default function CustomModuleModal({
                       />
                       <button
                         type="button"
-                        onClick={() => setImageSize((s) => Math.min(140, s + 4))}
+                        onClick={() => setImageSize((s) => Math.min(160, s + 4))}
                         className="w-6 h-6 flex items-center justify-center rounded bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-bold cursor-pointer"
                         title="Larger"
                       >

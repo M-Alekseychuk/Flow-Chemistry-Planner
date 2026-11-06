@@ -45,17 +45,17 @@ A beginner-friendly, graphical continuous flow chemistry planning tool that allo
   - Multi-color stream path tracing with color inheritance and mixed-stream detection.
   - Dedicated **Accessible Uniform Mode** switch for colorblind compatibility.
   - Global Light and Dark mode with responsive contrast.
-  - Engineering flow rate unit toggle (`mL/min` $\leftrightarrow$ `L/h`).
+  - Flow rate unit toggle (`mL/min` $\leftrightarrow$ `L/h`).
   - Custom organization logo upload with persistent storage, aspect-ratio preservation, and adjustable header height slider (24px to 64px).
 
 - **Project Management & Portability**:
   - Multi-project dashboard with creation, renaming, and project descriptions/comments.
   - Full project JSON export and import for seamless offline sharing and backups.
   - Project Recycle Bin with restore and permanent deletion capabilities.
-  - 100% offline-ready with local browser persistence (`localStorage`).
+  - 100% offline
 
 - **High-Resolution Branded PDF Export**:
-  - Ultra-crisp 350+ DPI vector schematic diagram export with lossless Flate compression and zero foreignObject scaling blur.
+  - Ultra-crisp 350+ DPI vector schematic diagram
   - Clean header displaying project name, project description, export date, and the software's active logo in the top-right corner.
   - **Physical Setup Photo Documentation**: Optional Page 2 attachment allowing physical laboratory or fume hood assembly photos to be embedded alongside the flow scheme with descriptive captions.
 

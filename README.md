@@ -1,3 +1,6 @@
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-v1.0.0-blue.svg)](package.json)
+
 # Flow Chemistry Designer
 
 A beginner-friendly, graphical continuous flow chemistry planning tool that allows for visualization of complex setups by dragging standardized (or custom) modules onto a canvas and connecting them.

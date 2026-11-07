@@ -114,6 +114,12 @@ docs/
 
 ---
 
-## License
+## 🔒 Offline & Data Privacy
+
+This application runs **100% locally**. Nothing is ever sent to external servers or third-party cloud services. Local calculations and saved sessions reside solely on youe device.
+
+---
+
+## 📄 License
 
 GNU General Public License (GPL-3.0; https://www.gnu.org/licenses/gpl-3.0.html)
